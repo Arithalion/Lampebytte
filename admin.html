@@ -327,10 +327,14 @@
       <p>Logg inn for å administrere lamper</p>
       <form id="login-form">
         <div class="form-group">
-          <label for="input-password">Passord</label>
-          <input id="input-password" type="password" autocomplete="current-password" autofocus>
+          <label for="input-email">E-post</label>
+          <input id="input-email" type="email" autocomplete="email" autofocus>
         </div>
-        <p id="login-error">Feil passord. Prøv igjen.</p>
+        <div class="form-group">
+          <label for="input-password">Passord</label>
+          <input id="input-password" type="password" autocomplete="current-password">
+        </div>
+        <p id="login-error">Feil e-post eller passord. Prøv igjen.</p>
         <div class="modal-actions">
           <button type="submit" class="btn-primary">Logg inn</button>
         </div>

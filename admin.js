@@ -1,23 +1,18 @@
-const ADMIN_PASSWORD = 'lampe2024';
-const SESSION_KEY = 'lampebytte_admin_session';
-
 let editingId = null;
-let editingImageUrl = null; // existing image URL when editing
-let uploadedImageFile = null; // new file selected by admin
+let editingImageUrl = null;
+let uploadedImageFile = null;
 
 // ── Auth ─────────────────────────────────────────────────
 
 const loginScreen = document.getElementById('login-screen');
 const adminPanel = document.getElementById('admin-panel');
 
-function isLoggedIn() {
-  return sessionStorage.getItem(SESSION_KEY) === 'yes';
-}
-
-async function showPanel() {
+function showPanel() {
   loginScreen.style.display = 'none';
   adminPanel.style.display = 'block';
-  await Promise.all([loadSettings(), renderLampList(), renderOfferRequests()]);
+  loadSettings();
+  renderLampList();
+  renderOfferRequests();
 }
 
 function showLogin() {
@@ -25,28 +20,27 @@ function showLogin() {
   adminPanel.style.display = 'none';
 }
 
-if (isLoggedIn()) {
-  showPanel();
-} else {
-  showLogin();
-}
+db.auth.getSession().then(({ data: { session } }) => {
+  if (session) showPanel(); else showLogin();
+});
+
+db.auth.onAuthStateChange((event, session) => {
+  if (session) showPanel(); else showLogin();
+});
 
 document.getElementById('login-form').addEventListener('submit', async e => {
   e.preventDefault();
-  const pw = document.getElementById('input-password').value;
-  if (pw === ADMIN_PASSWORD) {
-    sessionStorage.setItem(SESSION_KEY, 'yes');
-    await showPanel();
-  } else {
+  const email = document.getElementById('input-email').value.trim();
+  const password = document.getElementById('input-password').value;
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
     document.getElementById('login-error').style.display = 'block';
     document.getElementById('input-password').value = '';
-    document.getElementById('input-password').focus();
   }
 });
 
-document.getElementById('btn-logout').addEventListener('click', () => {
-  sessionStorage.removeItem(SESSION_KEY);
-  showLogin();
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await db.auth.signOut();
 });
 
 // ── Settings ─────────────────────────────────────────────
