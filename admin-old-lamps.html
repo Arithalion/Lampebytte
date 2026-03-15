@@ -48,6 +48,16 @@
             <input id="old-lamp-name" type="text" placeholder="f.eks. Halogen GU10 50W" required>
           </div>
 
+          <div class="form-group full">
+            <label for="old-lamp-category">Kategori</label>
+            <select id="old-lamp-category">
+              <option value="">Velg kategori</option>
+              <option value="Innendørsbelysning">Innendørsbelysning</option>
+              <option value="Utendørsbelysning">Utendørsbelysning</option>
+              <option value="Annet">Annet</option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="old-lamp-watt"><span class="label-row">Watt *<span class="tooltip">?<span class="tooltip-text">Skriv inn effekt (Watt) på lyskilde/Systemeffekt</span></span></span></label>
             <input id="old-lamp-watt" type="number" min="1" required>
@@ -176,6 +186,7 @@
       oldImageFile = null;
 
       document.getElementById('old-lamp-name').value = lamp.name;
+      document.getElementById('old-lamp-category').value = lamp.category || '';
       document.getElementById('old-lamp-watt').value = lamp.oldWatt;
       document.getElementById('old-lamp-per-armature').value = lamp.lampsPerArmature || 1;
       document.getElementById('old-lamp-ballast').value = Math.round((lamp.oldBallast || 0) * 100);
@@ -266,6 +277,7 @@
       try {
         const lampData = {
           name,
+          category: document.getElementById('old-lamp-category').value || null,
           oldWatt,
           lampsPerArmature: parseInt(document.getElementById('old-lamp-per-armature').value) || 1,
           oldBallast: (parseFloat(document.getElementById('old-lamp-ballast').value) || 0) / 100,

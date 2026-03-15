@@ -57,17 +57,50 @@ function nok(val) {
 
 const grid = document.getElementById('lamp-grid');
 const emptyState = document.getElementById('empty-state');
+const filterContainer = document.getElementById('category-filters');
+
+let allLamps = [];
+let activeCategory = null;
 
 async function renderGrid() {
   grid.innerHTML = '<p style="color:#aaa;padding:20px 0">Laster lamper…</p>';
-  const lamps = await getOldLamps();
+  allLamps = await getOldLamps();
   grid.innerHTML = '';
+  buildCategoryFilters();
+  renderFilteredLamps();
+}
+
+function buildCategoryFilters() {
+  const categories = [...new Set(allLamps.map(l => l.category).filter(Boolean))].sort();
+  filterContainer.innerHTML = '';
+
+  if (categories.length === 0) {
+    filterContainer.style.display = 'none';
+    return;
+  }
+
+  filterContainer.style.display = 'flex';
+  ['Alle', ...categories].forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (activeCategory === null && cat === 'Alle' || activeCategory === cat ? ' active' : '');
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      activeCategory = cat === 'Alle' ? null : cat;
+      buildCategoryFilters();
+      renderFilteredLamps();
+    });
+    filterContainer.appendChild(btn);
+  });
+}
+
+function renderFilteredLamps() {
+  grid.innerHTML = '';
+  const lamps = activeCategory ? allLamps.filter(l => l.category === activeCategory) : allLamps;
 
   if (lamps.length === 0) {
     emptyState.style.display = 'block';
     return;
   }
-
   emptyState.style.display = 'none';
 
   lamps.forEach(lamp => {

@@ -48,6 +48,16 @@
             <input id="new-lamp-name" type="text" placeholder="f.eks. LED GU10 7W" required>
           </div>
 
+          <div class="form-group full">
+            <label for="new-lamp-category">Kategori</label>
+            <select id="new-lamp-category">
+              <option value="">Velg kategori</option>
+              <option value="Innendørsbelysning">Innendørsbelysning</option>
+              <option value="Utendørsbelysning">Utendørsbelysning</option>
+              <option value="Annet">Annet</option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label for="new-lamp-watt"><span class="label-row">Watt *<span class="tooltip">?<span class="tooltip-text">Skriv inn effekt (Watt) på lyskilde/Systemeffekt</span></span></span></label>
             <input id="new-lamp-watt" type="number" min="1" required>
@@ -169,6 +179,7 @@
       newImageFile = null;
 
       document.getElementById('new-lamp-name').value = lamp.name;
+      document.getElementById('new-lamp-category').value = lamp.category || '';
       document.getElementById('new-lamp-watt').value = lamp.newWatt;
       document.getElementById('new-lamp-per-armature').value = lamp.lampsPerArmature || 1;
       document.getElementById('new-lamp-lifespan').value = lamp.newLifespan || '';
@@ -236,6 +247,7 @@
       try {
         const lampData = {
           name,
+          category: document.getElementById('new-lamp-category').value || null,
           newWatt,
           lampsPerArmature: parseInt(document.getElementById('new-lamp-per-armature').value) || 1,
           newLifespan: parseInt(document.getElementById('new-lamp-lifespan').value) || null,

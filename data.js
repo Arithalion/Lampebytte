@@ -44,6 +44,7 @@ function mapOldLamp(row) {
     id: row.id,
     name: row.name,
     image: row.image_url,
+    category: row.category,
     oldWatt: row.old_watt,
     lampsPerArmature: row.lamps_per_armature,
     oldBallast: row.old_ballast,
@@ -59,6 +60,7 @@ function mapNewLamp(row) {
     id: row.id,
     name: row.name,
     image: row.image_url,
+    category: row.category,
     newWatt: row.new_watt,
     lampsPerArmature: row.lamps_per_armature,
     newLifespan: row.new_lifespan,
@@ -84,6 +86,7 @@ async function addOldLamp(lampData, imageFile) {
   const { data, error } = await db.from('old_lamps').insert({
     name: lampData.name,
     image_url: imageUrl,
+    category: lampData.category || null,
     old_watt: lampData.oldWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     old_ballast: lampData.oldBallast,
@@ -100,6 +103,7 @@ async function updateOldLamp(id, lampData, imageFile, existingImageUrl) {
   const { error } = await db.from('old_lamps').update({
     name: lampData.name,
     image_url: imageUrl,
+    category: lampData.category || null,
     old_watt: lampData.oldWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     old_ballast: lampData.oldBallast,
@@ -128,6 +132,7 @@ async function addNewLamp(lampData, imageFile) {
   const { data, error } = await db.from('new_lamps').insert({
     name: lampData.name,
     image_url: imageUrl,
+    category: lampData.category || null,
     new_watt: lampData.newWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     new_lifespan: lampData.newLifespan,
@@ -144,6 +149,7 @@ async function updateNewLamp(id, lampData, imageFile, existingImageUrl) {
   const { error } = await db.from('new_lamps').update({
     name: lampData.name,
     image_url: imageUrl,
+    category: lampData.category || null,
     new_watt: lampData.newWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     new_lifespan: lampData.newLifespan,
