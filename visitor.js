@@ -130,7 +130,6 @@ function openModal(lamp) {
   document.getElementById('input-phone').value = '';
 
   renderReplacementSelector();
-  renderCustomizeSection();
   updateEstimate();
 
   overlay.classList.add('open');
@@ -238,6 +237,12 @@ document.getElementById('btn-done').addEventListener('click', closeModal);
 
 // ── Customize section ─────────────────────────────────────
 
+function updateSettingsSummary() {
+  const eff = getEffectiveSettings();
+  document.getElementById('settings-hours').textContent = eff.annualHours.toLocaleString('nb-NO');
+  document.getElementById('settings-kwh').textContent = eff.kwhPrice.toFixed(2).replace('.', ',');
+}
+
 function renderCustomizeSection() {
   const kwhInput = document.getElementById('visitor-kwh');
   kwhInput.value = (visitorKwhPrice ?? cachedSettings.kwhPrice).toFixed(2);
@@ -263,6 +268,7 @@ function renderCustomizeSection() {
         tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
         tr.classList.add('selected');
       }
+      updateSettingsSummary();
       updateEstimate();
     });
     tbody.appendChild(tr);
@@ -274,12 +280,13 @@ document.getElementById('btn-customize').addEventListener('click', () => {
   const btn = document.getElementById('btn-customize');
   const open = body.style.display === 'none';
   body.style.display = open ? 'block' : 'none';
-  btn.textContent = open ? 'Tilpass beregning ▲' : 'Tilpass beregning ▼';
+  btn.textContent = open ? 'Tilpass ▲' : 'Tilpass ▼';
 });
 
 document.getElementById('visitor-kwh').addEventListener('input', () => {
   const val = parseFloat(document.getElementById('visitor-kwh').value);
   visitorKwhPrice = val > 0 ? val : null;
+  updateSettingsSummary();
   updateEstimate();
 });
 
@@ -287,6 +294,8 @@ document.getElementById('visitor-kwh').addEventListener('input', () => {
 async function init() {
   cachedSettings = await getSettings();
   cachedCategories = await getBuildingCategories();
+  renderCustomizeSection();
+  updateSettingsSummary();
   await renderGrid();
 }
 

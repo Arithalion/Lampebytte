@@ -443,6 +443,28 @@ main h2 {
   font-weight: 500;
 }
 
+/* ── Settings bar ── */
+.settings-bar {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+}
+
+.settings-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: #555;
+}
+
+.settings-summary strong {
+  color: #1a1a1a;
+}
+
 /* ── Customize section ── */
 .btn-customize {
   background: none;
