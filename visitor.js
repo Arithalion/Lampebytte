@@ -228,7 +228,8 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
 
   const antall = parseInt(document.getElementById('input-antall').value) || 1;
   const phone = document.getElementById('input-phone').value.trim();
-  await submitOfferRequest(currentLamp.id, currentLamp.name, antall, name, email, phone);
+  const eff = getEffectiveSettings();
+  await submitOfferRequest(currentLamp.id, currentLamp.name, selectedReplacement?.name || null, antall, name, email, phone, eff.kwhPrice, eff.annualHours);
 
   contactForm.classList.remove('visible');
   successMsg.classList.add('visible');

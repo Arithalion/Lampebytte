@@ -213,16 +213,24 @@ async function deleteBuildingCategory(id) {
   if (error) console.error('deleteBuildingCategory:', error);
 }
 
-async function submitOfferRequest(lampId, lampName, numArmatures, name, email, phone) {
+async function submitOfferRequest(lampId, lampName, replacementName, numArmatures, name, email, phone, kwhPrice, annualHours) {
   const { error } = await db.from('offer_requests').insert({
     lamp_id: lampId,
     lamp_name: lampName,
+    replacement_name: replacementName,
     num_armatures: numArmatures,
     visitor_name: name,
     email,
     phone: phone || null,
+    kwh_price: kwhPrice,
+    annual_hours: annualHours,
   });
   if (error) console.error('submitOfferRequest:', error);
+}
+
+async function deleteOfferRequest(id) {
+  const { error } = await db.from('offer_requests').delete().eq('id', id);
+  if (error) console.error('deleteOfferRequest:', error);
 }
 
 async function getOfferRequests() {

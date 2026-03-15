@@ -524,14 +524,24 @@ async function renderOfferRequests() {
     row.innerHTML = `
       <div class="offer-info">
         <div class="offer-name">${r.visitor_name}</div>
-        <div class="offer-sub">${r.lamp_name} · ${r.num_armatures} stk</div>
+        <div class="offer-sub">${r.lamp_name}${r.replacement_name ? ` → ${r.replacement_name}` : ''} · ${r.num_armatures} stk</div>
+        ${r.kwh_price || r.annual_hours ? `<div class="offer-settings">${[r.kwh_price ? r.kwh_price.toFixed(2).replace('.', ',') + ' kr/kWh' : null, r.annual_hours ? r.annual_hours.toLocaleString('nb-NO') + ' timer/år' : null].filter(Boolean).join(' · ')}</div>` : ''}
       </div>
       <div class="offer-contact">
         <a href="mailto:${r.email}">${r.email}</a>
         ${r.phone ? `<span>${r.phone}</span>` : ''}
       </div>
       <div class="offer-date">${date}</div>
+      <div class="lamp-row-actions">
+        <button class="btn-edit btn-handle">Behandle</button>
+        <button class="btn-delete btn-delete-offer">Slett</button>
+      </div>
     `;
+    row.querySelector('.btn-delete-offer').addEventListener('click', async () => {
+      if (!confirm(`Slett forespørsel fra ${r.visitor_name}?`)) return;
+      await deleteOfferRequest(r.id);
+      renderOfferRequests();
+    });
     container.appendChild(row);
   });
 }
