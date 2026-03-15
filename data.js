@@ -236,8 +236,37 @@ async function deleteOfferRequest(id) {
 async function getOfferRequests() {
   const { data, error } = await db
     .from('offer_requests')
-    .select('*')
+    .select('*, old_lamps(image_url)')
     .order('created_at', { ascending: false });
   if (error) { console.error('getOfferRequests:', error); return []; }
   return data;
+}
+
+async function updateRequestStatus(id, status) {
+  const { error } = await db.from('offer_requests').update({ status }).eq('id', id);
+  if (error) console.error('updateRequestStatus:', error);
+}
+
+async function createOffer(requestId) {
+  const { data, error } = await db.from('offers').insert({ request_id: requestId }).select().single();
+  if (error) { console.error('createOffer:', error); return null; }
+  return data;
+}
+
+async function getOffers() {
+  const { data, error } = await db
+    .from('offers')
+    .select('*, offer_requests(visitor_name, lamp_name, replacement_name, email, num_armatures)')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('getOffers:', error); return []; }
+  return data;
+}
+
+async function updateOffer(id, { offerStatus, notes }) {
+  const { error } = await db.from('offers').update({
+    offer_status: offerStatus,
+    notes,
+    updated_at: new Date().toISOString(),
+  }).eq('id', id);
+  if (error) console.error('updateOffer:', error);
 }

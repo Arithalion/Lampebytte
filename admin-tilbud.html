@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tilbud – Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <span class="admin-nav-title">Admin</span>
+    <a href="admin-requests.html">Forespørsler</a>
+    <a href="admin-tilbud.html" class="active">Tilbud</a>
+    <a href="admin-settings.html">Innstillinger</a>
+    <a href="admin-old-lamps.html">Gamle lamper</a>
+    <a href="admin-new-lamps.html">Nye lamper</a>
+    <div class="nav-spacer"></div>
+    <a href="index.html">← Til siden</a>
+    <button id="btn-logout">Logg ut</button>
+  </nav>
+
+  <main class="admin-main">
+
+    <div class="section">
+      <h2>Alle tilbud</h2>
+      <div id="offers-list"></div>
+      <p id="offers-empty" style="display:none;font-size:0.9rem;color:#aaa">Ingen tilbud ennå.</p>
+    </div>
+
+    <div class="section" id="editor-section" style="display:none">
+      <h2>Rediger tilbud</h2>
+      <div id="editor-details"></div>
+      <hr class="editor-divider">
+      <div class="form-group" style="margin-top:16px">
+        <label for="editor-notes">Notater</label>
+        <textarea id="editor-notes" rows="5" style="width:100%;font-family:inherit;font-size:0.9rem;border:1.5px solid #e0e0e0;border-radius:8px;padding:10px;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+      <div style="margin-top:16px">
+        <div style="font-size:0.85rem;color:#666;margin-bottom:8px">Status</div>
+        <div class="status-toggle">
+          <button class="status-btn" data-status="under_arbeid">Under arbeid</button>
+          <button class="status-btn" data-status="tilbud_sendt">Tilbud sendt</button>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:20px">
+        <button id="btn-save" class="btn-primary">Lagre</button>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+  <script>
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = 'admin.html';
+      else initPage();
+    });
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (!session) window.location.href = 'admin.html';
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => db.auth.signOut());
+
+    let currentOfferId = null;
+    let currentOfferStatus = 'under_arbeid';
+
+    async function initPage() {
+      const offers = await getOffers();
+      renderOffersList(offers);
+
+      const urlId = new URLSearchParams(window.location.search).get('id');
+      if (urlId) {
+        const offer = offers.find(o => o.id === urlId);
+        if (offer) openEditor(offer);
+      }
+    }
+
+    function renderOffersList(offers) {
+      const list = document.getElementById('offers-list');
+      const empty = document.getElementById('offers-empty');
+      list.innerHTML = '';
+
+      if (offers.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      offers.forEach(offer => {
+        const req = offer.offer_requests;
+        const badgeClass = offer.offer_status === 'tilbud_sendt' ? 'badge-sent' : 'badge-working';
+        const badgeText = offer.offer_status === 'tilbud_sendt' ? 'Tilbud sendt' : 'Under arbeid';
+
+        const row = document.createElement('div');
+        row.className = 'offer-row';
+        row.innerHTML = `
+          <div class="offer-info">
+            <div class="offer-name">${req?.visitor_name ?? '–'}</div>
+            <div class="offer-sub">${req?.lamp_name ?? '–'}${req?.replacement_name ? ` → ${req.replacement_name}` : ''}</div>
+          </div>
+          <span class="status-badge ${badgeClass}">${badgeText}</span>
+          <div class="lamp-row-actions">
+            <button class="btn-edit btn-open">Åpne</button>
+          </div>
+        `;
+        row.querySelector('.btn-open').addEventListener('click', () => openEditor(offer));
+        list.appendChild(row);
+      });
+    }
+
+    function openEditor(offer) {
+      currentOfferId = offer.id;
+      currentOfferStatus = offer.offer_status || 'under_arbeid';
+
+      const req = offer.offer_requests;
+      document.getElementById('editor-details').innerHTML = `
+        <div class="detail-grid">
+          <span class="detail-label">Navn</span>
+          <span>${req?.visitor_name ?? '–'}</span>
+          <span class="detail-label">Lampe</span>
+          <span>${req?.lamp_name ?? '–'}${req?.replacement_name ? ` → ${req.replacement_name}` : ''}</span>
+          <span class="detail-label">Antall</span>
+          <span>${req?.num_armatures ?? '–'} stk</span>
+          <span class="detail-label">E-post</span>
+          <span><a href="mailto:${req?.email}">${req?.email ?? '–'}</a></span>
+        </div>
+      `;
+
+      document.getElementById('editor-notes').value = offer.notes || '';
+      setStatusBtn(currentOfferStatus);
+
+      const section = document.getElementById('editor-section');
+      section.style.display = 'block';
+      section.scrollIntoView({ behavior: 'smooth' });
+
+      const url = new URL(window.location);
+      url.searchParams.set('id', offer.id);
+      history.replaceState(null, '', url);
+    }
+
+    function setStatusBtn(status) {
+      currentOfferStatus = status;
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === status);
+      });
+    }
+
+    document.querySelectorAll('.status-btn').forEach(btn => {
+      btn.addEventListener('click', () => setStatusBtn(btn.dataset.status));
+    });
+
+    document.getElementById('btn-save').addEventListener('click', async () => {
+      if (!currentOfferId) return;
+      const btn = document.getElementById('btn-save');
+      btn.disabled = true;
+      btn.textContent = 'Lagrer…';
+      await updateOffer(currentOfferId, {
+        offerStatus: currentOfferStatus,
+        notes: document.getElementById('editor-notes').value.trim(),
+      });
+      btn.textContent = 'Lagret ✓';
+      setTimeout(() => { btn.textContent = 'Lagre'; btn.disabled = false; }, 2000);
+    });
+  </script>
+</body>
+</html>

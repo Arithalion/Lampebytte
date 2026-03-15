@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gamle lamper – Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <span class="admin-nav-title">Admin</span>
+    <a href="admin-requests.html">Forespørsler</a>
+    <a href="admin-tilbud.html">Tilbud</a>
+    <a href="admin-settings.html">Innstillinger</a>
+    <a href="admin-old-lamps.html" class="active">Gamle lamper</a>
+    <a href="admin-new-lamps.html">Nye lamper</a>
+    <div class="nav-spacer"></div>
+    <a href="index.html">← Til siden</a>
+    <button id="btn-logout">Logg ut</button>
+  </nav>
+
+  <main class="admin-main">
+
+    <!-- Old lamps list -->
+    <div class="section">
+      <h2>Gamle lamper</h2>
+      <div id="old-lamp-list"></div>
+      <p id="old-lamp-empty" style="display:none;font-size:0.9rem;color:#aaa">Ingen gamle lamper lagt til ennå.</p>
+    </div>
+
+    <!-- Old lamp form -->
+    <div class="section">
+      <h2 id="old-lamp-form-title">Legg til gammel lampe</h2>
+      <form id="old-lamp-form">
+        <div class="form-grid">
+
+          <div class="form-group full">
+            <p class="field-section-label">Bilde</p>
+            <label class="upload-label" for="old-lamp-image">📷 Velg bilde</label>
+            <input id="old-lamp-image" type="file" accept="image/*" style="display:none">
+            <div id="old-image-preview" class="image-preview"></div>
+          </div>
+
+          <div class="form-group full">
+            <label for="old-lamp-name">Navn *</label>
+            <input id="old-lamp-name" type="text" placeholder="f.eks. Halogen GU10 50W" required>
+          </div>
+
+          <div class="form-group">
+            <label for="old-lamp-watt"><span class="label-row">Watt *<span class="tooltip">?<span class="tooltip-text">Skriv inn effekt (Watt) på lyskilde/Systemeffekt</span></span></span></label>
+            <input id="old-lamp-watt" type="number" min="1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="old-lamp-per-armature"><span class="label-row">Lyskilder per armatur<span class="tooltip">?<span class="tooltip-text">Skriv inn ANTALL lyskilder pr. armatur</span></span></span></label>
+            <input id="old-lamp-per-armature" type="number" min="1" value="1">
+          </div>
+
+          <div class="form-group">
+            <label for="old-lamp-ballast"><span class="label-row">Forkoblingsfaktor %<span class="tooltip">?<span class="tooltip-text">Skriv inn forkobling FORBRUK (prosent). Typiske verdier: Konvensjonell: 15–40%, HF: 5–15%</span></span></span></label>
+            <input id="old-lamp-ballast" type="number" min="0" max="100" value="0">
+          </div>
+
+          <div class="form-group">
+            <label for="old-lamp-lifespan"><span class="label-row">Levetid (timer)<span class="tooltip">?<span class="tooltip-text">Skriv inn opplyst levetid. Gruppeskift utføres erfaringsmessig etter 10 000 timer med T8 og T5 13 000 timer grunnet utfall og redusert lysutbytte.</span></span></span></label>
+            <input id="old-lamp-lifespan" type="number" min="100">
+          </div>
+
+          <div class="form-group">
+            <label for="old-lamp-price"><span class="label-row">Pris per lyskilde (kr)<span class="tooltip">?<span class="tooltip-text">Skriv inn innkjøpspris pr. lyskilde</span></span></span></label>
+            <input id="old-lamp-price" type="number" min="0">
+          </div>
+
+          <div class="form-group full">
+            <label for="old-lamp-labour"><span class="label-row">Arbeidskostnad per bytte (kr)<span class="tooltip">?<span class="tooltip-text">Skriv inn utskiftingspris pr. lyskilde (arbeid ved bytte)</span></span></span></label>
+            <input id="old-lamp-labour" type="number" min="0">
+          </div>
+
+          <div class="form-group full">
+            <p class="field-section-label">Koble til erstatninger</p>
+            <div id="replacement-checkboxes" class="checkbox-group"></div>
+          </div>
+
+        </div>
+        <div class="modal-actions" style="margin-top: 20px">
+          <button type="submit" id="old-lamp-submit" class="btn-primary">Legg til</button>
+          <button type="button" id="old-lamp-cancel" class="btn-secondary" style="display:none">Avbryt</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+  <script>
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = 'admin.html';
+      else initPage();
+    });
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (!session) window.location.href = 'admin.html';
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => db.auth.signOut());
+
+    // Tooltips (touch support)
+    document.addEventListener('click', e => {
+      const tip = e.target.closest('.tooltip');
+      if (tip) {
+        e.stopPropagation();
+        const wasActive = tip.classList.contains('active');
+        document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+        if (!wasActive) tip.classList.add('active');
+      } else {
+        document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+      }
+    });
+
+    async function initPage() {
+      renderOldLampList();
+      renderReplacementCheckboxes();
+    }
+
+    let oldEditingId = null;
+    let oldEditingImageUrl = null;
+    let oldImageFile = null;
+
+    async function renderOldLampList() {
+      const list = document.getElementById('old-lamp-list');
+      const empty = document.getElementById('old-lamp-empty');
+      list.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
+
+      const lamps = await getOldLamps();
+      list.innerHTML = '';
+
+      if (lamps.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      lamps.forEach(lamp => {
+        const row = document.createElement('div');
+        row.className = 'lamp-row' + (oldEditingId === lamp.id ? ' editing' : '');
+        const thumb = lamp.image ? `<img src="${lamp.image}" alt="${lamp.name}">` : '💡';
+        const repNames = lamp.replacements.map(r => r.name).join(', ') || '—';
+        row.innerHTML = `
+          <div class="lamp-row-thumb">${thumb}</div>
+          <div class="lamp-row-info">
+            <div class="lamp-row-name">${lamp.name}</div>
+            <div class="lamp-row-sub">${lamp.oldWatt}W &nbsp;·&nbsp; ${repNames}</div>
+          </div>
+          <div class="lamp-row-actions">
+            <button class="btn-edit">Rediger</button>
+            <button class="btn-delete">Slett</button>
+          </div>
+        `;
+        row.querySelector('.btn-edit').addEventListener('click', () => startEditOldLamp(lamp));
+        row.querySelector('.btn-delete').addEventListener('click', () => handleDeleteOldLamp(lamp.id));
+        list.appendChild(row);
+      });
+    }
+
+    async function handleDeleteOldLamp(id) {
+      if (!confirm('Slett denne lampen?')) return;
+      if (oldEditingId === id) cancelEditOldLamp();
+      await deleteOldLamp(id);
+      renderOldLampList();
+    }
+
+    async function startEditOldLamp(lamp) {
+      oldEditingId = lamp.id;
+      oldEditingImageUrl = lamp.image || null;
+      oldImageFile = null;
+
+      document.getElementById('old-lamp-name').value = lamp.name;
+      document.getElementById('old-lamp-watt').value = lamp.oldWatt;
+      document.getElementById('old-lamp-per-armature').value = lamp.lampsPerArmature || 1;
+      document.getElementById('old-lamp-ballast').value = Math.round((lamp.oldBallast || 0) * 100);
+      document.getElementById('old-lamp-lifespan').value = lamp.oldLifespan || '';
+      document.getElementById('old-lamp-price').value = lamp.oldLampPrice || '';
+      document.getElementById('old-lamp-labour').value = lamp.replacementLabour || '';
+
+      const preview = document.getElementById('old-image-preview');
+      if (lamp.image) {
+        preview.innerHTML = `<img src="${lamp.image}" alt="Forhåndsvisning">`;
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+      }
+
+      document.getElementById('old-lamp-form-title').textContent = 'Rediger gammel lampe';
+      document.getElementById('old-lamp-submit').textContent = 'Lagre endringer';
+      document.getElementById('old-lamp-cancel').style.display = 'block';
+
+      await renderReplacementCheckboxes(lamp.replacements.map(r => r.id));
+
+      renderOldLampList();
+      document.getElementById('old-lamp-form-title').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEditOldLamp() {
+      oldEditingId = null;
+      oldEditingImageUrl = null;
+      oldImageFile = null;
+      document.getElementById('old-lamp-form').reset();
+      document.getElementById('old-image-preview').style.display = 'none';
+      document.getElementById('old-image-preview').innerHTML = '';
+      document.getElementById('old-lamp-form-title').textContent = 'Legg til gammel lampe';
+      document.getElementById('old-lamp-submit').textContent = 'Legg til';
+      document.getElementById('old-lamp-submit').disabled = false;
+      document.getElementById('old-lamp-cancel').style.display = 'none';
+      renderReplacementCheckboxes();
+      renderOldLampList();
+    }
+
+    document.getElementById('old-lamp-cancel').addEventListener('click', cancelEditOldLamp);
+
+    document.getElementById('old-lamp-image').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      oldImageFile = file;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const preview = document.getElementById('old-image-preview');
+        preview.innerHTML = `<img src="${ev.target.result}" alt="Forhåndsvisning">`;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    async function renderReplacementCheckboxes(selectedIds = []) {
+      const container = document.getElementById('replacement-checkboxes');
+      const newLamps = await getNewLamps();
+
+      if (newLamps.length === 0) {
+        container.innerHTML = '<p style="color:#aaa;font-size:0.85rem">Ingen nye lamper lagt til ennå.</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      newLamps.forEach(lamp => {
+        const label = document.createElement('label');
+        label.className = 'checkbox-label';
+        label.innerHTML = `
+          <input type="checkbox" value="${lamp.id}" ${selectedIds.includes(lamp.id) ? 'checked' : ''}>
+          ${lamp.name} (${lamp.newWatt}W)
+        `;
+        container.appendChild(label);
+      });
+    }
+
+    document.getElementById('old-lamp-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('old-lamp-name').value.trim();
+      const oldWatt = parseInt(document.getElementById('old-lamp-watt').value);
+      if (!name || !oldWatt) return;
+
+      const btn = document.getElementById('old-lamp-submit');
+      btn.disabled = true;
+      btn.textContent = 'Lagrer…';
+
+      try {
+        const lampData = {
+          name,
+          oldWatt,
+          lampsPerArmature: parseInt(document.getElementById('old-lamp-per-armature').value) || 1,
+          oldBallast: (parseFloat(document.getElementById('old-lamp-ballast').value) || 0) / 100,
+          oldLifespan: parseInt(document.getElementById('old-lamp-lifespan').value) || 2000,
+          oldLampPrice: parseFloat(document.getElementById('old-lamp-price').value) || 0,
+          replacementLabour: parseFloat(document.getElementById('old-lamp-labour').value) || 0,
+        };
+
+        const checkedIds = [...document.querySelectorAll('#replacement-checkboxes input:checked')].map(i => i.value);
+
+        if (oldEditingId) {
+          await updateOldLamp(oldEditingId, lampData, oldImageFile, oldEditingImageUrl);
+          await setLampReplacements(oldEditingId, checkedIds);
+          cancelEditOldLamp();
+        } else {
+          const created = await addOldLamp(lampData, oldImageFile);
+          if (created) await setLampReplacements(created.id, checkedIds);
+          e.target.reset();
+          oldImageFile = null;
+          document.getElementById('old-image-preview').style.display = 'none';
+          document.getElementById('old-image-preview').innerHTML = '';
+          renderReplacementCheckboxes();
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldEditingId ? 'Lagre endringer' : 'Legg til';
+      }
+
+      renderOldLampList();
+    });
+  </script>
+</body>
+</html>

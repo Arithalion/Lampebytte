@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Innstillinger – Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <span class="admin-nav-title">Admin</span>
+    <a href="admin-requests.html">Forespørsler</a>
+    <a href="admin-tilbud.html">Tilbud</a>
+    <a href="admin-settings.html" class="active">Innstillinger</a>
+    <a href="admin-old-lamps.html">Gamle lamper</a>
+    <a href="admin-new-lamps.html">Nye lamper</a>
+    <div class="nav-spacer"></div>
+    <a href="index.html">← Til siden</a>
+    <button id="btn-logout">Logg ut</button>
+  </nav>
+
+  <main class="admin-main">
+
+    <!-- Global settings -->
+    <div class="section">
+      <h2>Globale innstillinger</h2>
+      <form id="settings-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="setting-kwh">Strømpris (kr/kWh)</label>
+            <input id="setting-kwh" type="number" step="0.01" min="0.01" placeholder="1.50">
+          </div>
+          <div class="form-group">
+            <label for="setting-hours">Brukstid per år (timer)</label>
+            <input id="setting-hours" type="number" min="1" placeholder="3120">
+          </div>
+          <div class="form-group">
+            <label for="setting-co2"><span class="label-row">CO₂-faktor (g/kWh)<span class="tooltip">?<span class="tooltip-text">Gram CO₂-ekvivalenter per kWh. Utgangspunkt i NVEs klimadeklarasjon fra 2024. <a href="https://www.nve.no/energi/energisystem/energibruk/stroemdeklarasjoner/" target="_blank" style="color:#adf">Les mer</a></span></span></span></label>
+            <input id="setting-co2" type="number" min="0" step="1">
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top: 16px">
+          <button type="submit" class="btn-primary">Lagre innstillinger</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Building categories -->
+    <div class="section">
+      <h2>Bygningskategorier</h2>
+      <div id="building-cat-list"></div>
+      <p id="building-cat-empty" style="display:none;font-size:0.9rem;color:#aaa">Ingen kategorier lagt til ennå.</p>
+    </div>
+
+    <!-- Building category form -->
+    <div class="section">
+      <h2 id="building-cat-form-title">Legg til bygningskategori</h2>
+      <form id="building-cat-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="cat-hours">Driftstid (timer) *</label>
+            <input id="cat-hours" type="number" min="1" required>
+          </div>
+          <div class="form-group">
+            <label for="cat-name">Bygningskategori *</label>
+            <input id="cat-name" type="text" placeholder="f.eks. Kontorbygg" required>
+          </div>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px">
+          <button type="submit" id="building-cat-submit" class="btn-primary">Legg til</button>
+          <button type="button" id="building-cat-cancel" class="btn-secondary" style="display:none">Avbryt</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+  <script>
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = 'admin.html';
+      else initPage();
+    });
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (!session) window.location.href = 'admin.html';
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => db.auth.signOut());
+
+    // Tooltips (touch support)
+    document.addEventListener('click', e => {
+      const tip = e.target.closest('.tooltip');
+      if (tip) {
+        e.stopPropagation();
+        const wasActive = tip.classList.contains('active');
+        document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+        if (!wasActive) tip.classList.add('active');
+      } else {
+        document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+      }
+    });
+
+    async function initPage() {
+      loadSettings();
+      renderBuildingCatList();
+    }
+
+    // ── Settings ─────────────────────────────────────────────
+
+    async function loadSettings() {
+      const s = await getSettings();
+      document.getElementById('setting-kwh').value = s.kwhPrice;
+      document.getElementById('setting-hours').value = s.annualHours;
+      document.getElementById('setting-co2').value = s.co2Factor;
+    }
+
+    document.getElementById('settings-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const kwhPrice = parseFloat(document.getElementById('setting-kwh').value);
+      const annualHours = parseInt(document.getElementById('setting-hours').value);
+      const co2Factor = parseFloat(document.getElementById('setting-co2').value);
+      if (!kwhPrice || !annualHours || co2Factor == null || isNaN(co2Factor)) return;
+      await saveSettings(kwhPrice, annualHours, co2Factor);
+      showSavedFeedback(e.target.querySelector('button'));
+    });
+
+    function showSavedFeedback(btn) {
+      const original = btn.textContent;
+      btn.textContent = 'Lagret ✓';
+      btn.disabled = true;
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
+    }
+
+    // ── Building categories ────────────────────────────────────
+
+    let catEditingId = null;
+
+    async function renderBuildingCatList() {
+      const list = document.getElementById('building-cat-list');
+      const empty = document.getElementById('building-cat-empty');
+      list.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
+
+      const cats = await getBuildingCategories();
+      list.innerHTML = '';
+
+      if (cats.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      cats.forEach(cat => {
+        const row = document.createElement('div');
+        row.className = 'cat-row';
+        row.innerHTML = `
+          <div class="cat-hours">${cat.hours} t</div>
+          <div class="cat-name">${cat.category}</div>
+          <div class="lamp-row-actions">
+            <button class="btn-edit">Rediger</button>
+            <button class="btn-delete">Slett</button>
+          </div>
+        `;
+        row.querySelector('.btn-edit').addEventListener('click', () => startEditBuildingCat(cat));
+        row.querySelector('.btn-delete').addEventListener('click', () => handleDeleteBuildingCat(cat.id));
+        list.appendChild(row);
+      });
+    }
+
+    async function handleDeleteBuildingCat(id) {
+      if (!confirm('Slett denne kategorien?')) return;
+      if (catEditingId === id) cancelEditBuildingCat();
+      await deleteBuildingCategory(id);
+      renderBuildingCatList();
+    }
+
+    function startEditBuildingCat(cat) {
+      catEditingId = cat.id;
+      document.getElementById('cat-hours').value = cat.hours;
+      document.getElementById('cat-name').value = cat.category;
+      document.getElementById('building-cat-form-title').textContent = 'Rediger bygningskategori';
+      document.getElementById('building-cat-submit').textContent = 'Lagre endringer';
+      document.getElementById('building-cat-cancel').style.display = 'block';
+      renderBuildingCatList();
+      document.getElementById('building-cat-form-title').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEditBuildingCat() {
+      catEditingId = null;
+      document.getElementById('building-cat-form').reset();
+      document.getElementById('building-cat-form-title').textContent = 'Legg til bygningskategori';
+      document.getElementById('building-cat-submit').textContent = 'Legg til';
+      document.getElementById('building-cat-submit').disabled = false;
+      document.getElementById('building-cat-cancel').style.display = 'none';
+      renderBuildingCatList();
+    }
+
+    document.getElementById('building-cat-cancel').addEventListener('click', cancelEditBuildingCat);
+
+    document.getElementById('building-cat-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const hours = parseInt(document.getElementById('cat-hours').value);
+      const category = document.getElementById('cat-name').value.trim();
+      if (!hours || !category) return;
+
+      const btn = document.getElementById('building-cat-submit');
+      btn.disabled = true;
+      btn.textContent = 'Lagrer…';
+
+      try {
+        if (catEditingId) {
+          await updateBuildingCategory(catEditingId, { hours, category });
+          cancelEditBuildingCat();
+        } else {
+          await addBuildingCategory({ hours, category });
+          e.target.reset();
+        }
+      } finally {
+        btn.disabled = false;
+        btn.textContent = catEditingId ? 'Lagre endringer' : 'Legg til';
+      }
+
+      renderBuildingCatList();
+    });
+  </script>
+</body>
+</html>

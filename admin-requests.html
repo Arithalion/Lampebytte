@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forespørsler – Admin</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <nav class="admin-nav">
+    <span class="admin-nav-title">Admin</span>
+    <a href="admin-requests.html" class="active">Forespørsler</a>
+    <a href="admin-tilbud.html">Tilbud</a>
+    <a href="admin-settings.html">Innstillinger</a>
+    <a href="admin-old-lamps.html">Gamle lamper</a>
+    <a href="admin-new-lamps.html">Nye lamper</a>
+    <div class="nav-spacer"></div>
+    <a href="index.html">← Til siden</a>
+    <button id="btn-logout">Logg ut</button>
+  </nav>
+
+  <main class="admin-main">
+
+    <div class="section">
+      <div class="section-header">
+        <h2>Nye forespørsler</h2>
+        <button id="btn-refresh" class="btn-refresh">Oppdater</button>
+      </div>
+      <div id="list-new"></div>
+      <p id="empty-new" style="display:none;font-size:0.9rem;color:#aaa">Ingen nye forespørsler.</p>
+    </div>
+
+    <div class="section">
+      <h2>Leste forespørsler</h2>
+      <div id="list-read"></div>
+      <p id="empty-read" style="display:none;font-size:0.9rem;color:#aaa">Ingen leste forespørsler.</p>
+    </div>
+
+    <div class="section">
+      <h2>Tilbud påbegynt</h2>
+      <div id="list-started"></div>
+      <p id="empty-started" style="display:none;font-size:0.9rem;color:#aaa">Ingen tilbud påbegynt.</p>
+    </div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+  <script>
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = 'admin.html';
+      else initPage();
+    });
+
+    db.auth.onAuthStateChange((event, session) => {
+      if (!session) window.location.href = 'admin.html';
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => db.auth.signOut());
+    document.getElementById('btn-refresh').addEventListener('click', renderAll);
+
+    async function initPage() {
+      renderAll();
+    }
+
+    async function renderAll() {
+      ['list-new', 'list-read', 'list-started'].forEach(id => {
+        document.getElementById(id).innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
+      });
+
+      const [requests, offers] = await Promise.all([getOfferRequests(), getOffers()]);
+
+      renderSection('list-new', 'empty-new', requests.filter(r => r.status === 'new'));
+      renderSection('list-read', 'empty-read', requests.filter(r => r.status === 'read'));
+      renderStartedSection(requests.filter(r => r.status === 'offer_started'), offers);
+    }
+
+    function formatDate(iso) {
+      return new Date(iso).toLocaleDateString('nb-NO', {
+        day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    function renderSection(listId, emptyId, requests) {
+      const list = document.getElementById(listId);
+      const empty = document.getElementById(emptyId);
+      list.innerHTML = '';
+
+      if (requests.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      requests.forEach(r => {
+        const row = document.createElement('div');
+        row.className = 'offer-row';
+        row.innerHTML = `
+          <div class="offer-info">
+            <div class="offer-name">${r.visitor_name}</div>
+            <div class="offer-sub">${r.lamp_name}${r.replacement_name ? ` → ${r.replacement_name}` : ''} · ${r.num_armatures} stk</div>
+          </div>
+          <div class="offer-meta">
+            <div class="offer-date">${formatDate(r.created_at)}</div>
+            <div class="lamp-row-actions">
+              <button class="btn-edit btn-handle">Se og behandle</button>
+            </div>
+          </div>
+        `;
+
+        const detailPanel = buildDetailPanel(r);
+
+        row.querySelector('.btn-handle').addEventListener('click', async () => {
+          const isOpen = detailPanel.style.display !== 'none';
+          if (isOpen) { detailPanel.style.display = 'none'; return; }
+          if (r.status === 'new') {
+            r.status = 'read';
+            await updateRequestStatus(r.id, 'read');
+          }
+          detailPanel.style.display = 'block';
+        });
+
+        list.appendChild(row);
+        list.appendChild(detailPanel);
+      });
+    }
+
+    function buildDetailPanel(r) {
+      const panel = document.createElement('div');
+      panel.className = 'detail-panel';
+      panel.style.display = 'none';
+
+      const imgHtml = r.old_lamps?.image_url
+        ? `<img src="${r.old_lamps.image_url}" alt="">`
+        : '💡';
+
+      const settingsLine = [
+        r.kwh_price ? r.kwh_price.toFixed(2).replace('.', ',') + ' kr/kWh' : null,
+        r.annual_hours ? r.annual_hours.toLocaleString('nb-NO') + ' timer/år' : null,
+      ].filter(Boolean).join(' · ');
+
+      panel.innerHTML = `
+        <div class="detail-top">
+          <div class="detail-img">${imgHtml}</div>
+          <div class="detail-info">
+            <div><strong>Lampe:</strong> ${r.lamp_name}${r.replacement_name ? ` → ${r.replacement_name}` : ''}</div>
+            <div><strong>Antall:</strong> ${r.num_armatures} stk</div>
+            ${settingsLine ? `<div>${settingsLine}</div>` : ''}
+            <div><strong>E-post:</strong> <a href="mailto:${r.email}">${r.email}</a>${r.phone ? ` · ${r.phone}` : ''}</div>
+            <div><strong>Dato:</strong> ${formatDate(r.created_at)}</div>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn-primary btn-start">Start tilbud</button>
+          <button class="btn-delete btn-delete-req">Slett</button>
+        </div>
+      `;
+
+      panel.querySelector('.btn-start').addEventListener('click', async () => {
+        const btn = panel.querySelector('.btn-start');
+        btn.disabled = true;
+        btn.textContent = 'Oppretter…';
+        const offer = await createOffer(r.id);
+        if (!offer) { btn.disabled = false; btn.textContent = 'Start tilbud'; return; }
+        await updateRequestStatus(r.id, 'offer_started');
+        window.location.href = `admin-tilbud.html?id=${offer.id}`;
+      });
+
+      panel.querySelector('.btn-delete-req').addEventListener('click', async () => {
+        if (!confirm(`Slett forespørsel fra ${r.visitor_name}?`)) return;
+        await deleteOfferRequest(r.id);
+        renderAll();
+      });
+
+      return panel;
+    }
+
+    function renderStartedSection(requests, offers) {
+      const list = document.getElementById('list-started');
+      const empty = document.getElementById('empty-started');
+      list.innerHTML = '';
+
+      if (requests.length === 0) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      requests.forEach(r => {
+        const offer = offers.find(o => o.request_id === r.id);
+        const imgHtml = r.old_lamps?.image_url
+          ? `<img src="${r.old_lamps.image_url}" alt="">`
+          : '💡';
+        const badgeClass = offer?.offer_status === 'tilbud_sendt' ? 'badge-sent' : 'badge-working';
+        const badgeText = offer?.offer_status === 'tilbud_sendt' ? 'Tilbud sendt' : 'Under arbeid';
+
+        const row = document.createElement('div');
+        row.className = 'offer-row-started';
+        row.innerHTML = `
+          <div class="started-img">${imgHtml}</div>
+          <div class="offer-info">
+            <div class="offer-name">${r.visitor_name}</div>
+            <div class="offer-sub">${r.lamp_name}</div>
+          </div>
+          <span class="status-badge ${badgeClass}">${badgeText}</span>
+          <div class="lamp-row-actions">
+            ${offer ? `<a href="admin-tilbud.html?id=${offer.id}" class="btn-edit">Gå til tilbud</a>` : ''}
+          </div>
+        `;
+        list.appendChild(row);
+      });
+    }
+  </script>
+</body>
+</html>
