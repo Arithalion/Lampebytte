@@ -531,10 +531,12 @@ async function renderOfferRequests() {
         <a href="mailto:${r.email}">${r.email}</a>
         ${r.phone ? `<span>${r.phone}</span>` : ''}
       </div>
-      <div class="offer-date">${date}</div>
-      <div class="lamp-row-actions">
-        <button class="btn-edit btn-handle">Behandle</button>
-        <button class="btn-delete btn-delete-offer">Slett</button>
+      <div class="offer-meta">
+        <div class="offer-date">${date}</div>
+        <div class="lamp-row-actions">
+          <button class="btn-edit btn-handle">Behandle</button>
+          <button class="btn-delete btn-delete-offer">Slett</button>
+        </div>
       </div>
     `;
     row.querySelector('.btn-delete-offer').addEventListener('click', async () => {
