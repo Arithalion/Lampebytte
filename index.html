@@ -56,6 +56,25 @@
           <input id="input-antall" type="number" value="1" min="1" max="9999">
         </div>
 
+        <!-- Customize settings -->
+        <div id="customize-section" style="margin-bottom: 14px">
+          <button type="button" id="btn-customize" class="btn-customize">Tilpass beregning ▼</button>
+          <div id="customize-body" style="display:none">
+            <div class="antall-row" style="margin-bottom: 12px">
+              <label for="visitor-kwh">Strømpris (kr/kWh)</label>
+              <input id="visitor-kwh" type="number" step="0.01" min="0.01" style="width:90px;padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;font-size:1rem;font-family:inherit;text-align:center">
+            </div>
+            <p style="font-size:0.82rem;font-weight:500;color:#444;margin-bottom:8px">Brukstid</p>
+            <table id="building-cat-table" class="building-cat-table">
+              <thead>
+                <tr><th>Driftstid* timer</th><th>Bygningskategori</th></tr>
+              </thead>
+              <tbody id="building-cat-body"></tbody>
+            </table>
+            <p class="building-cat-footnote">*Driftstiden korresponderer med NS 3031:2007, tabell A.3</p>
+          </div>
+        </div>
+
         <!-- Energy estimate -->
         <div id="modal-estimate" class="estimate-box"></div>
 

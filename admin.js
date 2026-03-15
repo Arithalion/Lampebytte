@@ -41,6 +41,7 @@ function showPanel() {
   loginScreen.style.display = 'none';
   adminPanel.style.display = 'block';
   loadSettings();
+  renderBuildingCatList();
   renderOldLampList();
   renderNewLampList();
   renderOfferRequests();
@@ -408,6 +409,95 @@ document.getElementById('new-lamp-form').addEventListener('submit', async e => {
   }
 
   renderNewLampList();
+});
+
+// ── Building categories ────────────────────────────────────
+
+let catEditingId = null;
+
+async function renderBuildingCatList() {
+  const list = document.getElementById('building-cat-list');
+  const empty = document.getElementById('building-cat-empty');
+  list.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
+
+  const cats = await getBuildingCategories();
+  list.innerHTML = '';
+
+  if (cats.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  cats.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.innerHTML = `
+      <div class="cat-hours">${cat.hours} t</div>
+      <div class="cat-name">${cat.category}</div>
+      <div class="lamp-row-actions">
+        <button class="btn-edit">Rediger</button>
+        <button class="btn-delete">Slett</button>
+      </div>
+    `;
+    row.querySelector('.btn-edit').addEventListener('click', () => startEditBuildingCat(cat));
+    row.querySelector('.btn-delete').addEventListener('click', () => handleDeleteBuildingCat(cat.id));
+    list.appendChild(row);
+  });
+}
+
+async function handleDeleteBuildingCat(id) {
+  if (!confirm('Slett denne kategorien?')) return;
+  if (catEditingId === id) cancelEditBuildingCat();
+  await deleteBuildingCategory(id);
+  renderBuildingCatList();
+}
+
+function startEditBuildingCat(cat) {
+  catEditingId = cat.id;
+  document.getElementById('cat-hours').value = cat.hours;
+  document.getElementById('cat-name').value = cat.category;
+  document.getElementById('building-cat-form-title').textContent = 'Rediger bygningskategori';
+  document.getElementById('building-cat-submit').textContent = 'Lagre endringer';
+  document.getElementById('building-cat-cancel').style.display = 'block';
+  renderBuildingCatList();
+  expandSection(document.getElementById('building-cat-section'));
+  document.getElementById('building-cat-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditBuildingCat() {
+  catEditingId = null;
+  document.getElementById('building-cat-form').reset();
+  document.getElementById('building-cat-form-title').textContent = 'Legg til bygningskategori';
+  document.getElementById('building-cat-submit').textContent = 'Legg til';
+  document.getElementById('building-cat-submit').disabled = false;
+  document.getElementById('building-cat-cancel').style.display = 'none';
+  renderBuildingCatList();
+}
+
+document.getElementById('building-cat-cancel').addEventListener('click', cancelEditBuildingCat);
+
+document.getElementById('building-cat-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const hours = parseInt(document.getElementById('cat-hours').value);
+  const category = document.getElementById('cat-name').value.trim();
+  if (!hours || !category) return;
+
+  const btn = document.getElementById('building-cat-submit');
+  btn.disabled = true;
+  btn.textContent = 'Lagrer…';
+
+  try {
+    if (catEditingId) {
+      await updateBuildingCategory(catEditingId, { hours, category });
+      cancelEditBuildingCat();
+    } else {
+      await addBuildingCategory({ hours, category });
+      e.target.reset();
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = catEditingId ? 'Lagre endringer' : 'Legg til';
+  }
+
+  renderBuildingCatList();
 });
 
 // ── Offer requests ────────────────────────────────────────

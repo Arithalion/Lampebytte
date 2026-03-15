@@ -101,6 +101,16 @@ const actionButtons = document.getElementById('action-buttons');
 let currentLamp = null;
 let selectedReplacement = null;
 let cachedSettings = { kwhPrice: 1.50, annualHours: 3120 };
+let cachedCategories = [];
+let visitorKwhPrice = null;
+let visitorAnnualHours = null;
+
+function getEffectiveSettings() {
+  return {
+    kwhPrice: visitorKwhPrice !== null ? visitorKwhPrice : cachedSettings.kwhPrice,
+    annualHours: visitorAnnualHours !== null ? visitorAnnualHours : cachedSettings.annualHours,
+  };
+}
 
 function openModal(lamp) {
   currentLamp = lamp;
@@ -120,6 +130,7 @@ function openModal(lamp) {
   document.getElementById('input-phone').value = '';
 
   renderReplacementSelector();
+  renderCustomizeSection();
   updateEstimate();
 
   overlay.classList.add('open');
@@ -176,7 +187,8 @@ function updateEstimate() {
   }
 
   const num = Math.max(1, parseInt(document.getElementById('input-antall').value) || 1);
-  const s = calcTCO(currentLamp, selectedReplacement, num, cachedSettings);
+  const s = calcTCO(currentLamp, selectedReplacement, num, getEffectiveSettings());
+  const eff = getEffectiveSettings();
 
   document.getElementById('modal-estimate').innerHTML = `
     <h4>Beregnet energibesparelse</h4>
@@ -188,7 +200,7 @@ function updateEstimate() {
     <div class="estimate-row"><span>Investering (estimert)</span><strong>${nok(s.totalInvestment)}</strong></div>
     <div class="estimate-row"><span>Tilbakebetalingstid</span><strong>${s.paybackYears === '—' ? '—' : s.paybackYears + ' år'}</strong></div>
     <div class="estimate-row"><span>CO₂-besparelse per år</span><strong>${s.co2TonnesAnnual} tonn</strong></div>
-    <p class="estimate-disclaimer">Beregnet med ${cachedSettings.annualHours} timer/år og ${cachedSettings.kwhPrice.toFixed(2).replace('.', ',')} kr/kWh</p>
+    <p class="estimate-disclaimer">Beregnet med ${eff.annualHours} timer/år og ${eff.kwhPrice.toFixed(2).replace('.', ',')} kr/kWh</p>
   `;
 }
 
@@ -224,9 +236,57 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
 
 document.getElementById('btn-done').addEventListener('click', closeModal);
 
+// ── Customize section ─────────────────────────────────────
+
+function renderCustomizeSection() {
+  const kwhInput = document.getElementById('visitor-kwh');
+  kwhInput.value = (visitorKwhPrice ?? cachedSettings.kwhPrice).toFixed(2);
+
+  const tbody = document.getElementById('building-cat-body');
+  tbody.innerHTML = '';
+
+  if (cachedCategories.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" style="color:#aaa;text-align:center;padding:12px;font-size:0.85rem">Ingen kategorier lagt til.</td></tr>';
+    return;
+  }
+
+  cachedCategories.forEach(cat => {
+    const tr = document.createElement('tr');
+    if (visitorAnnualHours === cat.hours) tr.classList.add('selected');
+    tr.innerHTML = `<td>${cat.hours}</td><td>${cat.category}</td>`;
+    tr.addEventListener('click', () => {
+      if (visitorAnnualHours === cat.hours) {
+        visitorAnnualHours = null;
+        tr.classList.remove('selected');
+      } else {
+        visitorAnnualHours = cat.hours;
+        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+        tr.classList.add('selected');
+      }
+      updateEstimate();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('btn-customize').addEventListener('click', () => {
+  const body = document.getElementById('customize-body');
+  const btn = document.getElementById('btn-customize');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  btn.textContent = open ? 'Tilpass beregning ▲' : 'Tilpass beregning ▼';
+});
+
+document.getElementById('visitor-kwh').addEventListener('input', () => {
+  const val = parseFloat(document.getElementById('visitor-kwh').value);
+  visitorKwhPrice = val > 0 ? val : null;
+  updateEstimate();
+});
+
 // ── Init ─────────────────────────────────────────────────
 async function init() {
   cachedSettings = await getSettings();
+  cachedCategories = await getBuildingCategories();
   await renderGrid();
 }
 

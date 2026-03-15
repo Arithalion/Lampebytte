@@ -183,7 +183,35 @@ async function saveSettings(kwhPrice, annualHours) {
   if (error) console.error('saveSettings:', error);
 }
 
-// ── Offer requests ────────────────────────────────────────
+// ── Building categories ───────────────────────────────────
+
+async function getBuildingCategories() {
+  const { data, error } = await db.from('building_categories').select('*').order('hours');
+  if (error) { console.error('getBuildingCategories:', error); return []; }
+  return data;
+}
+
+async function addBuildingCategory(catData) {
+  const { data, error } = await db.from('building_categories').insert({
+    hours: catData.hours,
+    category: catData.category,
+  }).select().single();
+  if (error) { console.error('addBuildingCategory:', error); return null; }
+  return data;
+}
+
+async function updateBuildingCategory(id, catData) {
+  const { error } = await db.from('building_categories').update({
+    hours: catData.hours,
+    category: catData.category,
+  }).eq('id', id);
+  if (error) console.error('updateBuildingCategory:', error);
+}
+
+async function deleteBuildingCategory(id) {
+  const { error } = await db.from('building_categories').delete().eq('id', id);
+  if (error) console.error('deleteBuildingCategory:', error);
+}
 
 async function submitOfferRequest(lampId, lampName, numArmatures, name, email, phone) {
   const { error } = await db.from('offer_requests').insert({

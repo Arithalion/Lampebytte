@@ -322,6 +322,30 @@
       color: #333;
     }
 
+    /* ── Building category rows ── */
+    .cat-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .cat-row:last-child { border-bottom: none; }
+
+    .cat-hours {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #4a90d9;
+      width: 72px;
+      flex-shrink: 0;
+    }
+
+    .cat-name {
+      flex: 1;
+      font-size: 0.9rem;
+    }
+
     /* ── Tooltip ── */
     .tooltip {
       display: inline-flex;
@@ -501,6 +525,44 @@
           </div>
           <div class="modal-actions" style="margin-top: 16px">
             <button type="submit" class="btn-primary">Lagre innstillinger</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Building categories list -->
+    <div class="section">
+      <div class="section-toggle">
+        <h2>Bygningskategorier</h2>
+        <span class="section-arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <div id="building-cat-list"></div>
+        <p id="building-cat-empty" style="display:none;font-size:0.9rem;color:#aaa">Ingen kategorier lagt til ennå.</p>
+      </div>
+    </div>
+
+    <!-- Building category form -->
+    <div id="building-cat-section" class="section collapsed">
+      <div class="section-toggle">
+        <h2 id="building-cat-form-title">Legg til bygningskategori</h2>
+        <span class="section-arrow">▼</span>
+      </div>
+      <div class="section-body">
+        <form id="building-cat-form">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="cat-hours">Driftstid (timer) *</label>
+              <input id="cat-hours" type="number" min="1" required>
+            </div>
+            <div class="form-group">
+              <label for="cat-name">Bygningskategori *</label>
+              <input id="cat-name" type="text" placeholder="f.eks. Kontorbygg" required>
+            </div>
+          </div>
+          <div class="modal-actions" style="margin-top: 20px">
+            <button type="submit" id="building-cat-submit" class="btn-primary">Legg til</button>
+            <button type="button" id="building-cat-cancel" class="btn-secondary" style="display:none">Avbryt</button>
           </div>
         </form>
       </div>

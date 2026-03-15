@@ -443,6 +443,63 @@ main h2 {
   font-weight: 500;
 }
 
+/* ── Customize section ── */
+.btn-customize {
+  background: none;
+  border: none;
+  color: #4a90d9;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.btn-customize:hover {
+  text-decoration: underline;
+}
+
+.building-cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 6px;
+}
+
+.building-cat-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #999;
+  font-weight: 600;
+  padding: 0 8px 8px 8px;
+}
+
+.building-cat-table td {
+  padding: 9px 8px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.building-cat-table tbody tr:hover td {
+  background: #f8f8f8;
+}
+
+.building-cat-table tbody tr.selected td {
+  background: #f0f7ff;
+  color: #1a6db5;
+  font-weight: 500;
+}
+
+.building-cat-footnote {
+  font-size: 0.72rem;
+  color: #aaa;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+
 /* ── Admin link ── */
 footer {
   text-align: center;
