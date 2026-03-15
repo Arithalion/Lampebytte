@@ -183,6 +183,7 @@ function cancelEditOldLamp() {
   document.getElementById('old-image-preview').innerHTML = '';
   document.getElementById('old-lamp-form-title').textContent = 'Legg til gammel lampe';
   document.getElementById('old-lamp-submit').textContent = 'Legg til';
+  document.getElementById('old-lamp-submit').disabled = false;
   document.getElementById('old-lamp-cancel').style.display = 'none';
   document.getElementById('replacement-checkboxes').innerHTML = '';
   renderOldLampList();
@@ -346,6 +347,7 @@ function cancelEditNewLamp() {
   document.getElementById('new-image-preview').innerHTML = '';
   document.getElementById('new-lamp-form-title').textContent = 'Legg til ny lampe';
   document.getElementById('new-lamp-submit').textContent = 'Legg til';
+  document.getElementById('new-lamp-submit').disabled = false;
   document.getElementById('new-lamp-cancel').style.display = 'none';
   document.getElementById('new-lamp-per-armature').value = 1;
   renderNewLampList();
