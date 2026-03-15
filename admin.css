@@ -560,6 +560,27 @@
   margin: 20px 0 0;
 }
 
+/* ── Offer log ── */
+.log-entry {
+  font-size: 0.83rem;
+  color: #555;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  line-height: 1.4;
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-date {
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.log-user {
+  font-weight: 500;
+  color: #444;
+}
+
 /* ── Misc ── */
 .field-section-label {
   font-size: 0.8rem;

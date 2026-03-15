@@ -276,3 +276,18 @@ async function updateOffer(id, { offerStatus, notes }) {
   }).eq('id', id);
   if (error) console.error('updateOffer:', error);
 }
+
+async function createOfferLog(offerId, userEmail, note) {
+  const { error } = await db.from('offer_logs').insert({ offer_id: offerId, user_email: userEmail, note });
+  if (error) console.error('createOfferLog:', error);
+}
+
+async function getOfferLogs(offerId) {
+  const { data, error } = await db
+    .from('offer_logs')
+    .select('*')
+    .eq('offer_id', offerId)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('getOfferLogs:', error); return []; }
+  return data;
+}

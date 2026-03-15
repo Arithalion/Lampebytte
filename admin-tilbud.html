@@ -47,6 +47,10 @@
       <div class="modal-actions" style="margin-top:20px">
         <button id="btn-save" class="btn-primary">Lagre</button>
       </div>
+
+      <hr class="editor-divider" style="margin-top:24px">
+      <div style="font-size:0.85rem;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:0.4px;margin-top:20px;margin-bottom:12px">Endringslogg</div>
+      <div id="offer-log"></div>
     </div>
 
   </main>
@@ -68,6 +72,9 @@
 
     let currentOfferId = null;
     let currentOfferStatus = 'under_arbeid';
+    let currentUserEmail = null;
+
+    db.auth.getUser().then(({ data: { user } }) => { currentUserEmail = user?.email ?? null; });
 
     async function initPage() {
       const offers = await getOffers();
@@ -136,6 +143,7 @@
 
       document.getElementById('editor-notes').value = offer.notes || '';
       setStatusBtn(currentOfferStatus);
+      renderOfferLog(offer.id);
 
       const section = document.getElementById('editor-section');
       section.style.display = 'block';
@@ -144,6 +152,27 @@
       const url = new URL(window.location);
       url.searchParams.set('id', offer.id);
       history.replaceState(null, '', url);
+    }
+
+    async function renderOfferLog(offerId) {
+      const logs = await getOfferLogs(offerId);
+      const container = document.getElementById('offer-log');
+      container.innerHTML = '';
+
+      if (logs.length === 0) {
+        container.innerHTML = '<p style="font-size:0.85rem;color:#aaa">Ingen endringer logget ennå.</p>';
+        return;
+      }
+
+      logs.forEach(log => {
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        const date = new Date(log.created_at).toLocaleDateString('nb-NO', {
+          day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+        entry.innerHTML = `<span class="log-date">${date}</span> <span class="log-user">${log.user_email ?? 'ukjent'}</span> — ${log.note}`;
+        container.appendChild(entry);
+      });
     }
 
     function setStatusBtn(status) {
@@ -166,6 +195,9 @@
         offerStatus: currentOfferStatus,
         notes: document.getElementById('editor-notes').value.trim(),
       });
+      const statusLabel = currentOfferStatus === 'tilbud_sendt' ? 'Tilbud sendt' : 'Under arbeid';
+      await createOfferLog(currentOfferId, currentUserEmail, `Status: ${statusLabel}`);
+      renderOfferLog(currentOfferId);
       btn.textContent = 'Lagret ✓';
       setTimeout(() => { btn.textContent = 'Lagre'; btn.disabled = false; }, 2000);
     });
