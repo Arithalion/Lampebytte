@@ -16,6 +16,20 @@ header {
   background: #1a1a2e;
   color: white;
   padding: 24px 32px;
+  position: relative;
+}
+
+.admin-link {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.35);
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  color: rgba(255,255,255,0.65);
 }
 
 header h1 {
