@@ -71,11 +71,11 @@
         document.getElementById(id).innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
       });
 
-      const [requests, offers] = await Promise.all([getOfferRequests(), getOffers()]);
+      const [requests, offers, oldLamps] = await Promise.all([getOfferRequests(), getOffers(), getOldLamps()]);
 
-      renderSection('list-new', 'empty-new', requests.filter(r => r.status === 'new'));
-      renderSection('list-read', 'empty-read', requests.filter(r => r.status === 'read'));
-      renderStartedSection(requests.filter(r => r.status === 'offer_started'), offers);
+      renderSection('list-new', 'empty-new', requests.filter(r => r.status === 'new'), oldLamps);
+      renderSection('list-read', 'empty-read', requests.filter(r => r.status === 'read'), oldLamps);
+      renderStartedSection(requests.filter(r => r.status === 'offer_started'), offers, oldLamps);
     }
 
     function formatDate(iso) {
@@ -84,7 +84,7 @@
       });
     }
 
-    function renderSection(listId, emptyId, requests) {
+    function renderSection(listId, emptyId, requests, oldLamps) {
       const list = document.getElementById(listId);
       const empty = document.getElementById(emptyId);
       list.innerHTML = '';
@@ -108,7 +108,7 @@
           </div>
         `;
 
-        const detailPanel = buildDetailPanel(r);
+        const detailPanel = buildDetailPanel(r, oldLamps);
 
         row.querySelector('.btn-handle').addEventListener('click', async () => {
           const isOpen = detailPanel.style.display !== 'none';
@@ -125,13 +125,14 @@
       });
     }
 
-    function buildDetailPanel(r) {
+    function buildDetailPanel(r, oldLamps) {
       const panel = document.createElement('div');
       panel.className = 'detail-panel';
       panel.style.display = 'none';
 
-      const imgHtml = r.old_lamps?.image_url
-        ? `<img src="${r.old_lamps.image_url}" alt="">`
+      const lamp = oldLamps.find(l => l.id === r.lamp_id);
+      const imgHtml = lamp?.image
+        ? `<img src="${lamp.image}" alt="">`
         : '💡';
 
       const settingsLine = [
@@ -175,7 +176,7 @@
       return panel;
     }
 
-    function renderStartedSection(requests, offers) {
+    function renderStartedSection(requests, offers, oldLamps) {
       const list = document.getElementById('list-started');
       const empty = document.getElementById('empty-started');
       list.innerHTML = '';
@@ -185,8 +186,9 @@
 
       requests.forEach(r => {
         const offer = offers.find(o => o.request_id === r.id);
-        const imgHtml = r.old_lamps?.image_url
-          ? `<img src="${r.old_lamps.image_url}" alt="">`
+        const lamp = oldLamps.find(l => l.id === r.lamp_id);
+        const imgHtml = lamp?.image
+          ? `<img src="${lamp.image}" alt="">`
           : '💡';
         const badgeClass = offer?.offer_status === 'tilbud_sendt' ? 'badge-sent' : 'badge-working';
         const badgeText = offer?.offer_status === 'tilbud_sendt' ? 'Tilbud sendt' : 'Under arbeid';

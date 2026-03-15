@@ -236,7 +236,7 @@ async function deleteOfferRequest(id) {
 async function getOfferRequests() {
   const { data, error } = await db
     .from('offer_requests')
-    .select('*, old_lamps(image_url)')
+    .select('*')
     .order('created_at', { ascending: false });
   if (error) { console.error('getOfferRequests:', error); return []; }
   return data;
@@ -256,7 +256,7 @@ async function createOffer(requestId) {
 async function getOffers() {
   const { data, error } = await db
     .from('offers')
-    .select('*, offer_requests(visitor_name, lamp_name, replacement_name, email, num_armatures)')
+    .select('*, offer_requests(visitor_name, lamp_name, replacement_name, email, num_armatures, kwh_price, annual_hours, created_at)')
     .order('created_at', { ascending: false });
   if (error) { console.error('getOffers:', error); return []; }
   return data;

@@ -123,8 +123,14 @@
           <span>${req?.lamp_name ?? '–'}${req?.replacement_name ? ` → ${req.replacement_name}` : ''}</span>
           <span class="detail-label">Antall</span>
           <span>${req?.num_armatures ?? '–'} stk</span>
+          <span class="detail-label">Strømpris</span>
+          <span>${req?.kwh_price != null ? req.kwh_price.toFixed(2).replace('.', ',') + ' kr/kWh' : '–'}</span>
+          <span class="detail-label">Brukstid</span>
+          <span>${req?.annual_hours != null ? req.annual_hours.toLocaleString('nb-NO') + ' timer/år' : '–'}</span>
           <span class="detail-label">E-post</span>
           <span><a href="mailto:${req?.email}">${req?.email ?? '–'}</a></span>
+          <span class="detail-label">Mottatt</span>
+          <span>${req?.created_at ? new Date(req.created_at).toLocaleDateString('nb-NO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'}</span>
         </div>
       `;
 
