@@ -1,0 +1,451 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f4f4f2;
+  color: #1a1a1a;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: #1a1a2e;
+  color: white;
+  padding: 24px 32px;
+}
+
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+header p {
+  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #a0a0c0;
+}
+
+/* ── Main content ── */
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+main h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #333;
+}
+
+/* ── Lamp grid ── */
+.lamp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+}
+
+.lamp-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.lamp-card:hover {
+  border-color: #4a90d9;
+  box-shadow: 0 4px 16px rgba(74,144,217,0.18);
+  transform: translateY(-2px);
+}
+
+.lamp-card:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+.lamp-card .lamp-image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #bbb;
+}
+
+.lamp-card .lamp-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lamp-card .lamp-name {
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  color: #888;
+  padding: 60px 20px;
+  font-size: 0.95rem;
+}
+
+/* ── Modal overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  transform: translateY(12px);
+  transition: transform 0.2s;
+}
+
+.modal-overlay.open .modal {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: 24px 24px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 0 0 0 12px;
+  flex-shrink: 0;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px 24px 24px;
+}
+
+/* ── Lamp comparison ── */
+.lamp-comparison {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.lamp-box {
+  flex: 1;
+  text-align: center;
+}
+
+.lamp-box .box-image {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.lamp-box .box-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lamp-box .box-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.lamp-box .box-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.arrow {
+  font-size: 1.4rem;
+  color: #4a90d9;
+  flex-shrink: 0;
+}
+
+/* ── Energy estimate box ── */
+.estimate-box {
+  background: #f0f7ff;
+  border: 1px solid #c8e0f8;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.estimate-box h4 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #4a90d9;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.estimate-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  padding: 4px 0;
+  color: #444;
+}
+
+.estimate-row strong {
+  color: #1a1a1a;
+}
+
+.estimate-total {
+  border-top: 1px solid #c8e0f8;
+  margin-top: 6px;
+  padding-top: 8px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.estimate-disclaimer {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 10px;
+  font-style: italic;
+}
+
+/* ── Contact form ── */
+.contact-form {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+.contact-form.visible {
+  display: flex;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.form-group input {
+  padding: 10px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+/* ── Buttons ── */
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 13px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.btn-primary:hover {
+  background: #2e2e50;
+}
+
+.btn-secondary {
+  background: none;
+  color: #666;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-secondary:hover {
+  border-color: #aaa;
+  color: #333;
+}
+
+/* ── Success message ── */
+.success-msg {
+  display: none;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.success-msg.visible {
+  display: block;
+}
+
+.success-msg .checkmark {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.success-msg h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.success-msg p {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* ── Antall lamper row ── */
+.antall-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.antall-row label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #444;
+}
+
+.antall-row input {
+  width: 90px;
+  padding: 8px 12px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  text-align: center;
+  transition: border-color 0.15s;
+}
+
+.antall-row input:focus {
+  outline: none;
+  border-color: #4a90d9;
+}
+
+/* ── Admin link ── */
+footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 0.8rem;
+  color: #bbb;
+}
+
+footer a {
+  color: #bbb;
+  text-decoration: none;
+}
+
+footer a:hover {
+  color: #888;
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  header {
+    padding: 20px;
+  }
+
+  main {
+    padding: 28px 16px;
+  }
+
+  .lamp-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 95vh;
+  }
+}

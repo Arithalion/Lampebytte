@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lampebytte</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>Lampebytte</h1>
+    <p>Finn lampen du vil bytte ut og se hva du kan spare</p>
+  </header>
+
+  <main>
+    <h2>Hvilken lampe har du?</h2>
+    <div id="lamp-grid" class="lamp-grid"></div>
+    <p id="empty-state" class="empty-state" style="display:none">
+      Ingen lamper er lagt til ennå.
+    </p>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+
+      <div class="modal-header">
+        <h3>Lampebytte</h3>
+        <button id="close-btn" class="close-btn" aria-label="Lukk">&times;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- Lamp comparison -->
+        <div class="lamp-comparison">
+          <div class="lamp-box">
+            <div class="box-label">Din lampe</div>
+            <div id="modal-old-image" class="box-image">💡</div>
+            <div id="modal-old-name" class="box-name"></div>
+          </div>
+          <div class="arrow">→</div>
+          <div class="lamp-box">
+            <div class="box-label">Erstatning</div>
+            <div class="box-image">💡</div>
+            <div id="modal-new-name" class="box-name"></div>
+          </div>
+        </div>
+
+        <!-- Number of lamps -->
+        <div class="antall-row">
+          <label for="input-antall">Antall lamper</label>
+          <input id="input-antall" type="number" value="1" min="1" max="9999">
+        </div>
+
+        <!-- Energy estimate -->
+        <div id="modal-estimate" class="estimate-box"></div>
+
+        <!-- Action buttons (initial state) -->
+        <div id="action-buttons" class="modal-actions">
+          <button id="btn-offer" class="btn-primary">Send meg et tilbud</button>
+          <button id="btn-cancel" class="btn-secondary">Avbryt</button>
+        </div>
+
+        <!-- Contact form (shown after clicking "Send meg et tilbud") -->
+        <form id="contact-form" class="contact-form" onsubmit="return false">
+          <div class="form-group">
+            <label for="input-name">Navn *</label>
+            <input id="input-name" type="text" placeholder="Ola Nordmann" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label for="input-email">E-post *</label>
+            <input id="input-email" type="email" placeholder="ola@eksempel.no" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="input-phone">Telefon (valgfritt)</label>
+            <input id="input-phone" type="tel" placeholder="+47 000 00 000" autocomplete="tel">
+          </div>
+          <div class="modal-actions">
+            <button id="btn-submit" class="btn-primary">Send forespørsel</button>
+            <button id="btn-back" class="btn-secondary" type="button">Tilbake</button>
+          </div>
+        </form>
+
+        <!-- Success message -->
+        <div id="success-msg" class="success-msg">
+          <div class="checkmark">✅</div>
+          <h4>Takk!</h4>
+          <p>Vi har mottatt forespørselen din og tar kontakt med deg snart.</p>
+          <div class="modal-actions" style="margin-top: 20px">
+            <button id="btn-done" class="btn-primary">Lukk</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <a href="admin.html">Admin</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="data.js"></script>
+  <script src="visitor.js"></script>
+</body>
+</html>
