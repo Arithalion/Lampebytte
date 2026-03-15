@@ -34,7 +34,7 @@ function calcTCO(oldLamp, newLamp, numArmatures, settings) {
 
   const totalInvestment = newLamp.ledInvestment * numArmatures;
   const paybackYears = annualTotalSavings > 0 ? totalInvestment / annualTotalSavings : null;
-  const co2TonnesAnnual = (annualKwhSavings * 300) / 1_000_000;
+  const co2TonnesAnnual = (annualKwhSavings * settings.co2Factor) / 1_000_000;
   const wattReductionPct = Math.round(((oldLamp.oldWatt - newLamp.newWatt) / oldLamp.oldWatt) * 100);
 
   return {
@@ -100,7 +100,7 @@ const actionButtons = document.getElementById('action-buttons');
 
 let currentLamp = null;
 let selectedReplacement = null;
-let cachedSettings = { kwhPrice: 1.50, annualHours: 3120 };
+let cachedSettings = { kwhPrice: 1.50, annualHours: 3120, co2Factor: 17 };
 let cachedCategories = [];
 let visitorKwhPrice = null;
 let visitorAnnualHours = null;
@@ -109,6 +109,7 @@ function getEffectiveSettings() {
   return {
     kwhPrice: visitorKwhPrice !== null ? visitorKwhPrice : cachedSettings.kwhPrice,
     annualHours: visitorAnnualHours !== null ? visitorAnnualHours : cachedSettings.annualHours,
+    co2Factor: cachedSettings.co2Factor,
   };
 }
 

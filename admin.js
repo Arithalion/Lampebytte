@@ -81,14 +81,16 @@ async function loadSettings() {
   const s = await getSettings();
   document.getElementById('setting-kwh').value = s.kwhPrice;
   document.getElementById('setting-hours').value = s.annualHours;
+  document.getElementById('setting-co2').value = s.co2Factor;
 }
 
 document.getElementById('settings-form').addEventListener('submit', async e => {
   e.preventDefault();
   const kwhPrice = parseFloat(document.getElementById('setting-kwh').value);
   const annualHours = parseInt(document.getElementById('setting-hours').value);
-  if (!kwhPrice || !annualHours) return;
-  await saveSettings(kwhPrice, annualHours);
+  const co2Factor = parseFloat(document.getElementById('setting-co2').value);
+  if (!kwhPrice || !annualHours || co2Factor == null || isNaN(co2Factor)) return;
+  await saveSettings(kwhPrice, annualHours, co2Factor);
   showSavedFeedback(e.target.querySelector('button'));
 });
 

@@ -385,7 +385,6 @@
       border-radius: 7px;
       width: 220px;
       z-index: 10;
-      pointer-events: none;
     }
 
     .tooltip-text::after {
@@ -521,6 +520,10 @@
             <div class="form-group">
               <label for="setting-hours">Brukstid per år (timer)</label>
               <input id="setting-hours" type="number" min="1" placeholder="3120">
+            </div>
+            <div class="form-group">
+              <label for="setting-co2"><span class="label-row">CO₂-faktor (g/kWh)<span class="tooltip">?<span class="tooltip-text">Gram CO₂-ekvivalenter per kWh. Utgangspunkt i NVEs klimadeklarasjon fra 2024. <a href="https://www.nve.no/energi/energisystem/energibruk/stroemdeklarasjoner/" target="_blank" style="color:#adf">Les mer</a></span></span></span></label>
+              <input id="setting-co2" type="number" min="0" step="1">
             </div>
           </div>
           <div class="modal-actions" style="margin-top: 16px">

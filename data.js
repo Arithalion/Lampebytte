@@ -174,12 +174,12 @@ async function setLampReplacements(oldLampId, newLampIds) {
 
 async function getSettings() {
   const { data, error } = await db.from('settings').select('*').eq('id', 1).single();
-  if (error) return { kwhPrice: 1.50, annualHours: 3120 };
-  return { kwhPrice: data.kwh_price, annualHours: data.annual_hours };
+  if (error) return { kwhPrice: 1.50, annualHours: 3120, co2Factor: 17 };
+  return { kwhPrice: data.kwh_price, annualHours: data.annual_hours, co2Factor: data.co2_factor ?? 17 };
 }
 
-async function saveSettings(kwhPrice, annualHours) {
-  const { error } = await db.from('settings').upsert({ id: 1, kwh_price: kwhPrice, annual_hours: annualHours });
+async function saveSettings(kwhPrice, annualHours, co2Factor) {
+  const { error } = await db.from('settings').upsert({ id: 1, kwh_price: kwhPrice, annual_hours: annualHours, co2_factor: co2Factor });
   if (error) console.error('saveSettings:', error);
 }
 
