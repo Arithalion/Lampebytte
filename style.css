@@ -407,6 +407,42 @@ main h2 {
   border-color: #4a90d9;
 }
 
+/* ── Replacement selector ── */
+#replacement-selector {
+  margin-bottom: 14px;
+}
+
+.selector-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.replacement-btn {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 6px 14px;
+  border: 1.5px solid #ddd;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.replacement-btn:hover {
+  border-color: #4a90d9;
+}
+
+.replacement-btn.active {
+  border-color: #4a90d9;
+  background: #f0f7ff;
+  color: #1a6db5;
+  font-weight: 500;
+}
+
 /* ── Admin link ── */
 footer {
   text-align: center;

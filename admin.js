@@ -1,6 +1,10 @@
-let editingId = null;
-let editingImageUrl = null;
-let uploadedImageFile = null;
+let oldEditingId = null;
+let oldEditingImageUrl = null;
+let oldImageFile = null;
+
+let newEditingId = null;
+let newEditingImageUrl = null;
+let newImageFile = null;
 
 // ── Auth ─────────────────────────────────────────────────
 
@@ -11,7 +15,8 @@ function showPanel() {
   loginScreen.style.display = 'none';
   adminPanel.style.display = 'block';
   loadSettings();
-  renderLampList();
+  renderOldLampList();
+  renderNewLampList();
   renderOfferRequests();
 }
 
@@ -64,86 +69,65 @@ function showSavedFeedback(btn) {
   const original = btn.textContent;
   btn.textContent = 'Lagret ✓';
   btn.disabled = true;
-  setTimeout(() => {
-    btn.textContent = original;
-    btn.disabled = false;
-  }, 2000);
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2000);
 }
 
-// ── Lamp list ────────────────────────────────────────────
+// ── Old lamps ─────────────────────────────────────────────
 
-const lampList = document.getElementById('lamp-list');
-const emptyMsg = document.getElementById('empty-msg');
+async function renderOldLampList() {
+  const list = document.getElementById('old-lamp-list');
+  const empty = document.getElementById('old-lamp-empty');
+  list.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
 
-async function renderLampList() {
-  lampList.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
-  const lamps = await getLamps();
-  lampList.innerHTML = '';
+  const lamps = await getOldLamps();
+  list.innerHTML = '';
 
-  if (lamps.length === 0) {
-    emptyMsg.style.display = 'block';
-    return;
-  }
-
-  emptyMsg.style.display = 'none';
+  if (lamps.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
 
   lamps.forEach(lamp => {
     const row = document.createElement('div');
-    row.className = 'lamp-row';
-    if (editingId === lamp.id) row.classList.add('editing');
-
-    const thumb = lamp.image
-      ? `<img src="${lamp.image}" alt="${lamp.name}">`
-      : '<span class="thumb-placeholder">💡</span>';
-
+    row.className = 'lamp-row' + (oldEditingId === lamp.id ? ' editing' : '');
+    const thumb = lamp.image ? `<img src="${lamp.image}" alt="${lamp.name}">` : '💡';
+    const repNames = lamp.replacements.map(r => r.name).join(', ') || '—';
     row.innerHTML = `
       <div class="lamp-row-thumb">${thumb}</div>
       <div class="lamp-row-info">
         <div class="lamp-row-name">${lamp.name}</div>
-        <div class="lamp-row-sub">${lamp.oldWatt}W → ${lamp.newWatt}W &nbsp;·&nbsp; ${lamp.replacement}</div>
+        <div class="lamp-row-sub">${lamp.oldWatt}W &nbsp;·&nbsp; ${repNames}</div>
       </div>
       <div class="lamp-row-actions">
         <button class="btn-edit">Rediger</button>
         <button class="btn-delete">Slett</button>
       </div>
     `;
-
-    row.querySelector('.btn-edit').addEventListener('click', () => startEdit(lamp));
-    row.querySelector('.btn-delete').addEventListener('click', () => handleDelete(lamp.id));
-    lampList.appendChild(row);
+    row.querySelector('.btn-edit').addEventListener('click', () => startEditOldLamp(lamp));
+    row.querySelector('.btn-delete').addEventListener('click', () => handleDeleteOldLamp(lamp.id));
+    list.appendChild(row);
   });
 }
 
-async function handleDelete(id) {
+async function handleDeleteOldLamp(id) {
   if (!confirm('Slett denne lampen?')) return;
-  if (editingId === id) cancelEdit();
-  await deleteLampFromDb(id);
-  await renderLampList();
+  if (oldEditingId === id) cancelEditOldLamp();
+  await deleteOldLamp(id);
+  renderOldLampList();
 }
 
-// ── Edit mode ────────────────────────────────────────────
+async function startEditOldLamp(lamp) {
+  oldEditingId = lamp.id;
+  oldEditingImageUrl = lamp.image || null;
+  oldImageFile = null;
 
-const formTitle = document.getElementById('form-title');
-const submitBtn = document.getElementById('btn-submit-lamp');
-const cancelBtn = document.getElementById('btn-cancel-edit');
+  document.getElementById('old-lamp-name').value = lamp.name;
+  document.getElementById('old-lamp-watt').value = lamp.oldWatt;
+  document.getElementById('old-lamp-per-armature').value = lamp.lampsPerArmature || 1;
+  document.getElementById('old-lamp-ballast').value = Math.round((lamp.oldBallast || 0) * 100);
+  document.getElementById('old-lamp-lifespan').value = lamp.oldLifespan || '';
+  document.getElementById('old-lamp-price').value = lamp.oldLampPrice || '';
+  document.getElementById('old-lamp-labour').value = lamp.replacementLabour || '';
 
-function startEdit(lamp) {
-  editingId = lamp.id;
-  editingImageUrl = lamp.image || null;
-  uploadedImageFile = null;
-
-  document.getElementById('input-name').value = lamp.name;
-  document.getElementById('input-replacement').value = lamp.replacement;
-  document.getElementById('input-old-watt').value = lamp.oldWatt;
-  document.getElementById('input-new-watt').value = lamp.newWatt;
-  document.getElementById('input-lamps-per-armature').value = lamp.lampsPerArmature || 1;
-  document.getElementById('input-ballast').value = Math.round((lamp.oldBallast || 0) * 100);
-  document.getElementById('input-old-lifespan').value = lamp.oldLifespan || '';
-  document.getElementById('input-lamp-price').value = lamp.oldLampPrice || '';
-  document.getElementById('input-labour').value = lamp.replacementLabour || '';
-  document.getElementById('input-led-investment').value = lamp.ledInvestment || '';
-
-  const preview = document.getElementById('image-preview');
+  const preview = document.getElementById('old-image-preview');
   if (lamp.image) {
     preview.innerHTML = `<img src="${lamp.image}" alt="Forhåndsvisning">`;
     preview.style.display = 'block';
@@ -152,87 +136,233 @@ function startEdit(lamp) {
     preview.innerHTML = '';
   }
 
-  formTitle.textContent = 'Rediger lampe';
-  submitBtn.textContent = 'Lagre endringer';
-  cancelBtn.style.display = 'block';
+  document.getElementById('old-lamp-form-title').textContent = 'Rediger gammel lampe';
+  document.getElementById('old-lamp-submit').textContent = 'Lagre endringer';
+  document.getElementById('old-lamp-cancel').style.display = 'block';
 
-  renderLampList();
-  document.getElementById('add-lamp-section').scrollIntoView({ behavior: 'smooth' });
+  // Load replacement checkboxes
+  await renderReplacementCheckboxes(lamp.replacements.map(r => r.id));
+
+  renderOldLampList();
+  document.getElementById('old-lamp-section').scrollIntoView({ behavior: 'smooth' });
 }
 
-function cancelEdit() {
-  editingId = null;
-  editingImageUrl = null;
-  uploadedImageFile = null;
-  document.getElementById('add-lamp-form').reset();
-  document.getElementById('image-preview').style.display = 'none';
-  document.getElementById('image-preview').innerHTML = '';
-  formTitle.textContent = 'Legg til lampe';
-  submitBtn.textContent = 'Legg til lampe';
-  cancelBtn.style.display = 'none';
-  renderLampList();
+function cancelEditOldLamp() {
+  oldEditingId = null;
+  oldEditingImageUrl = null;
+  oldImageFile = null;
+  document.getElementById('old-lamp-form').reset();
+  document.getElementById('old-image-preview').style.display = 'none';
+  document.getElementById('old-image-preview').innerHTML = '';
+  document.getElementById('old-lamp-form-title').textContent = 'Legg til gammel lampe';
+  document.getElementById('old-lamp-submit').textContent = 'Legg til';
+  document.getElementById('old-lamp-cancel').style.display = 'none';
+  document.getElementById('replacement-checkboxes').innerHTML = '';
+  renderOldLampList();
 }
 
-cancelBtn.addEventListener('click', cancelEdit);
+document.getElementById('old-lamp-cancel').addEventListener('click', cancelEditOldLamp);
 
-// ── Image upload ─────────────────────────────────────────
-
-document.getElementById('input-image').addEventListener('change', e => {
+document.getElementById('old-lamp-image').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
-  uploadedImageFile = file;
-  const preview = document.getElementById('image-preview');
+  oldImageFile = file;
   const reader = new FileReader();
   reader.onload = ev => {
+    const preview = document.getElementById('old-image-preview');
     preview.innerHTML = `<img src="${ev.target.result}" alt="Forhåndsvisning">`;
     preview.style.display = 'block';
   };
   reader.readAsDataURL(file);
 });
 
-// ── Add / Save lamp form ──────────────────────────────────
+async function renderReplacementCheckboxes(selectedIds = []) {
+  const container = document.getElementById('replacement-checkboxes');
+  const newLamps = await getNewLamps();
 
-document.getElementById('add-lamp-form').addEventListener('submit', async e => {
+  if (newLamps.length === 0) {
+    container.innerHTML = '<p style="color:#aaa;font-size:0.85rem">Ingen nye lamper lagt til ennå.</p>';
+    return;
+  }
+
+  container.innerHTML = '';
+  newLamps.forEach(lamp => {
+    const label = document.createElement('label');
+    label.className = 'checkbox-label';
+    label.innerHTML = `
+      <input type="checkbox" value="${lamp.id}" ${selectedIds.includes(lamp.id) ? 'checked' : ''}>
+      ${lamp.name} (${lamp.newWatt}W)
+    `;
+    container.appendChild(label);
+  });
+}
+
+document.getElementById('old-lamp-form').addEventListener('submit', async e => {
   e.preventDefault();
+  const name = document.getElementById('old-lamp-name').value.trim();
+  const oldWatt = parseInt(document.getElementById('old-lamp-watt').value);
+  if (!name || !oldWatt) return;
 
-  const name = document.getElementById('input-name').value.trim();
-  const replacement = document.getElementById('input-replacement').value.trim();
-  const oldWatt = parseInt(document.getElementById('input-old-watt').value);
-  const newWatt = parseInt(document.getElementById('input-new-watt').value);
-
-  if (!name || !replacement || !oldWatt || !newWatt) return;
-
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Lagrer…';
+  const btn = document.getElementById('old-lamp-submit');
+  btn.disabled = true;
+  btn.textContent = 'Lagrer…';
 
   const lampData = {
     name,
-    replacement,
     oldWatt,
-    newWatt,
-    lampsPerArmature: parseInt(document.getElementById('input-lamps-per-armature').value) || 1,
-    oldBallast: (parseFloat(document.getElementById('input-ballast').value) || 0) / 100,
-    oldLifespan: parseInt(document.getElementById('input-old-lifespan').value) || 2000,
-    oldLampPrice: parseFloat(document.getElementById('input-lamp-price').value) || 0,
-    replacementLabour: parseFloat(document.getElementById('input-labour').value) || 0,
-    ledInvestment: parseFloat(document.getElementById('input-led-investment').value) || 0,
+    lampsPerArmature: parseInt(document.getElementById('old-lamp-per-armature').value) || 1,
+    oldBallast: (parseFloat(document.getElementById('old-lamp-ballast').value) || 0) / 100,
+    oldLifespan: parseInt(document.getElementById('old-lamp-lifespan').value) || 2000,
+    oldLampPrice: parseFloat(document.getElementById('old-lamp-price').value) || 0,
+    replacementLabour: parseFloat(document.getElementById('old-lamp-labour').value) || 0,
   };
 
-  if (editingId) {
-    await updateLamp(editingId, lampData, uploadedImageFile, editingImageUrl);
-    cancelEdit();
+  const checkedIds = [...document.querySelectorAll('#replacement-checkboxes input:checked')].map(i => i.value);
+
+  if (oldEditingId) {
+    await updateOldLamp(oldEditingId, lampData, oldImageFile, oldEditingImageUrl);
+    await setLampReplacements(oldEditingId, checkedIds);
+    cancelEditOldLamp();
   } else {
-    await addLamp(lampData, uploadedImageFile);
+    const created = await addOldLamp(lampData, oldImageFile);
+    if (created) await setLampReplacements(created.id, checkedIds);
     e.target.reset();
-    uploadedImageFile = null;
-    document.getElementById('image-preview').style.display = 'none';
-    document.getElementById('image-preview').innerHTML = '';
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Legg til lampe';
+    oldImageFile = null;
+    document.getElementById('old-image-preview').style.display = 'none';
+    document.getElementById('old-image-preview').innerHTML = '';
+    document.getElementById('replacement-checkboxes').innerHTML = '';
+    btn.disabled = false;
+    btn.textContent = 'Legg til';
   }
 
-  await renderLampList();
-  document.getElementById('lamp-list-section').scrollIntoView({ behavior: 'smooth' });
+  renderOldLampList();
+});
+
+// ── New lamps ─────────────────────────────────────────────
+
+async function renderNewLampList() {
+  const list = document.getElementById('new-lamp-list');
+  const empty = document.getElementById('new-lamp-empty');
+  list.innerHTML = '<p style="color:#aaa;font-size:0.9rem">Laster…</p>';
+
+  const lamps = await getNewLamps();
+  list.innerHTML = '';
+
+  if (lamps.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  lamps.forEach(lamp => {
+    const row = document.createElement('div');
+    row.className = 'lamp-row' + (newEditingId === lamp.id ? ' editing' : '');
+    const thumb = lamp.image ? `<img src="${lamp.image}" alt="${lamp.name}">` : '💡';
+    row.innerHTML = `
+      <div class="lamp-row-thumb">${thumb}</div>
+      <div class="lamp-row-info">
+        <div class="lamp-row-name">${lamp.name}</div>
+        <div class="lamp-row-sub">${lamp.newWatt}W &nbsp;·&nbsp; ${lamp.ledInvestment} kr/armatur</div>
+      </div>
+      <div class="lamp-row-actions">
+        <button class="btn-edit">Rediger</button>
+        <button class="btn-delete">Slett</button>
+      </div>
+    `;
+    row.querySelector('.btn-edit').addEventListener('click', () => startEditNewLamp(lamp));
+    row.querySelector('.btn-delete').addEventListener('click', () => handleDeleteNewLamp(lamp.id));
+    list.appendChild(row);
+  });
+}
+
+async function handleDeleteNewLamp(id) {
+  if (!confirm('Slett denne lampen?')) return;
+  if (newEditingId === id) cancelEditNewLamp();
+  await deleteNewLamp(id);
+  renderNewLampList();
+}
+
+function startEditNewLamp(lamp) {
+  newEditingId = lamp.id;
+  newEditingImageUrl = lamp.image || null;
+  newImageFile = null;
+
+  document.getElementById('new-lamp-name').value = lamp.name;
+  document.getElementById('new-lamp-watt').value = lamp.newWatt;
+  document.getElementById('new-lamp-investment').value = lamp.ledInvestment || '';
+
+  const preview = document.getElementById('new-image-preview');
+  if (lamp.image) {
+    preview.innerHTML = `<img src="${lamp.image}" alt="Forhåndsvisning">`;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+
+  document.getElementById('new-lamp-form-title').textContent = 'Rediger ny lampe';
+  document.getElementById('new-lamp-submit').textContent = 'Lagre endringer';
+  document.getElementById('new-lamp-cancel').style.display = 'block';
+
+  renderNewLampList();
+  document.getElementById('new-lamp-section').scrollIntoView({ behavior: 'smooth' });
+}
+
+function cancelEditNewLamp() {
+  newEditingId = null;
+  newEditingImageUrl = null;
+  newImageFile = null;
+  document.getElementById('new-lamp-form').reset();
+  document.getElementById('new-image-preview').style.display = 'none';
+  document.getElementById('new-image-preview').innerHTML = '';
+  document.getElementById('new-lamp-form-title').textContent = 'Legg til ny lampe';
+  document.getElementById('new-lamp-submit').textContent = 'Legg til';
+  document.getElementById('new-lamp-cancel').style.display = 'none';
+  renderNewLampList();
+}
+
+document.getElementById('new-lamp-cancel').addEventListener('click', cancelEditNewLamp);
+
+document.getElementById('new-lamp-image').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  newImageFile = file;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const preview = document.getElementById('new-image-preview');
+    preview.innerHTML = `<img src="${ev.target.result}" alt="Forhåndsvisning">`;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+});
+
+document.getElementById('new-lamp-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('new-lamp-name').value.trim();
+  const newWatt = parseInt(document.getElementById('new-lamp-watt').value);
+  if (!name || !newWatt) return;
+
+  const btn = document.getElementById('new-lamp-submit');
+  btn.disabled = true;
+  btn.textContent = 'Lagrer…';
+
+  const lampData = {
+    name,
+    newWatt,
+    ledInvestment: parseFloat(document.getElementById('new-lamp-investment').value) || 0,
+  };
+
+  if (newEditingId) {
+    await updateNewLamp(newEditingId, lampData, newImageFile, newEditingImageUrl);
+    cancelEditNewLamp();
+  } else {
+    await addNewLamp(lampData, newImageFile);
+    e.target.reset();
+    newImageFile = null;
+    document.getElementById('new-image-preview').style.display = 'none';
+    document.getElementById('new-image-preview').innerHTML = '';
+    btn.disabled = false;
+    btn.textContent = 'Legg til';
+  }
+
+  renderNewLampList();
 });
 
 // ── Offer requests ────────────────────────────────────────
@@ -245,18 +375,13 @@ async function renderOfferRequests() {
   const requests = await getOfferRequests();
   container.innerHTML = '';
 
-  if (requests.length === 0) {
-    emptyEl.style.display = 'block';
-    return;
-  }
-
+  if (requests.length === 0) { emptyEl.style.display = 'block'; return; }
   emptyEl.style.display = 'none';
 
   requests.forEach(r => {
     const date = new Date(r.created_at).toLocaleDateString('nb-NO', {
       day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
-
     const row = document.createElement('div');
     row.className = 'offer-row';
     row.innerHTML = `

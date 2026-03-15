@@ -1,41 +1,6 @@
 const LAMPS_BUCKET = 'lamp-images';
 
-// Konverterer fra Supabase-format (snake_case) til JS (camelCase)
-function mapLamp(row) {
-  return {
-    id: row.id,
-    name: row.name,
-    replacement: row.replacement,
-    oldWatt: row.old_watt,
-    newWatt: row.new_watt,
-    lampsPerArmature: row.lamps_per_armature,
-    oldBallast: row.old_ballast,
-    oldLifespan: row.old_lifespan,
-    oldLampPrice: row.old_lamp_price,
-    replacementLabour: row.replacement_labour,
-    ledInvestment: row.led_investment,
-    image: row.image_url,
-  };
-}
-
-async function getLamps() {
-  const { data, error } = await db.from('lamps').select('*').order('created_at');
-  if (error) { console.error('getLamps:', error); return []; }
-  return data.map(mapLamp);
-}
-
-async function getSettings() {
-  const { data, error } = await db.from('settings').select('*').eq('id', 1).single();
-  if (error) return { kwhPrice: 1.50, annualHours: 3120 };
-  return { kwhPrice: data.kwh_price, annualHours: data.annual_hours };
-}
-
-async function saveSettings(kwhPrice, annualHours) {
-  const { error } = await db
-    .from('settings')
-    .upsert({ id: 1, kwh_price: kwhPrice, annual_hours: annualHours });
-  if (error) console.error('saveSettings:', error);
-}
+// ── Helpers ──────────────────────────────────────────────
 
 async function uploadImage(file) {
   const filename = `${Date.now()}-${file.name}`;
@@ -45,47 +10,139 @@ async function uploadImage(file) {
   return data.publicUrl;
 }
 
-async function addLamp(lampData, imageFile) {
+function mapOldLamp(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    image: row.image_url,
+    oldWatt: row.old_watt,
+    lampsPerArmature: row.lamps_per_armature,
+    oldBallast: row.old_ballast,
+    oldLifespan: row.old_lifespan,
+    oldLampPrice: row.old_lamp_price,
+    replacementLabour: row.replacement_labour,
+    replacements: (row.lamp_replacements || []).map(r => mapNewLamp(r.new_lamps)),
+  };
+}
+
+function mapNewLamp(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    image: row.image_url,
+    newWatt: row.new_watt,
+    ledInvestment: row.led_investment,
+  };
+}
+
+// ── Old lamps ─────────────────────────────────────────────
+
+async function getOldLamps() {
+  const { data, error } = await db
+    .from('old_lamps')
+    .select('*, lamp_replacements(new_lamps(*))')
+    .order('created_at');
+  if (error) { console.error('getOldLamps:', error); return []; }
+  return data.map(mapOldLamp);
+}
+
+async function addOldLamp(lampData, imageFile) {
   const imageUrl = imageFile ? await uploadImage(imageFile) : null;
-  const { data, error } = await db.from('lamps').insert({
+  const { data, error } = await db.from('old_lamps').insert({
     name: lampData.name,
-    replacement: lampData.replacement,
+    image_url: imageUrl,
     old_watt: lampData.oldWatt,
-    new_watt: lampData.newWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     old_ballast: lampData.oldBallast,
     old_lifespan: lampData.oldLifespan,
     old_lamp_price: lampData.oldLampPrice,
     replacement_labour: lampData.replacementLabour,
-    led_investment: lampData.ledInvestment,
-    image_url: imageUrl,
   }).select().single();
-  if (error) { console.error('addLamp:', error); return null; }
-  return mapLamp(data);
+  if (error) { console.error('addOldLamp:', error); return null; }
+  return mapOldLamp({ ...data, lamp_replacements: [] });
 }
 
-async function updateLamp(id, lampData, imageFile, existingImageUrl) {
+async function updateOldLamp(id, lampData, imageFile, existingImageUrl) {
   const imageUrl = imageFile ? await uploadImage(imageFile) : existingImageUrl;
-  const { error } = await db.from('lamps').update({
+  const { error } = await db.from('old_lamps').update({
     name: lampData.name,
-    replacement: lampData.replacement,
+    image_url: imageUrl,
     old_watt: lampData.oldWatt,
-    new_watt: lampData.newWatt,
     lamps_per_armature: lampData.lampsPerArmature,
     old_ballast: lampData.oldBallast,
     old_lifespan: lampData.oldLifespan,
     old_lamp_price: lampData.oldLampPrice,
     replacement_labour: lampData.replacementLabour,
-    led_investment: lampData.ledInvestment,
-    image_url: imageUrl,
   }).eq('id', id);
-  if (error) console.error('updateLamp:', error);
+  if (error) console.error('updateOldLamp:', error);
 }
 
-async function deleteLampFromDb(id) {
-  const { error } = await db.from('lamps').delete().eq('id', id);
-  if (error) console.error('deleteLampFromDb:', error);
+async function deleteOldLamp(id) {
+  const { error } = await db.from('old_lamps').delete().eq('id', id);
+  if (error) console.error('deleteOldLamp:', error);
 }
+
+// ── New lamps ─────────────────────────────────────────────
+
+async function getNewLamps() {
+  const { data, error } = await db.from('new_lamps').select('*').order('created_at');
+  if (error) { console.error('getNewLamps:', error); return []; }
+  return data.map(mapNewLamp);
+}
+
+async function addNewLamp(lampData, imageFile) {
+  const imageUrl = imageFile ? await uploadImage(imageFile) : null;
+  const { data, error } = await db.from('new_lamps').insert({
+    name: lampData.name,
+    image_url: imageUrl,
+    new_watt: lampData.newWatt,
+    led_investment: lampData.ledInvestment,
+  }).select().single();
+  if (error) { console.error('addNewLamp:', error); return null; }
+  return mapNewLamp(data);
+}
+
+async function updateNewLamp(id, lampData, imageFile, existingImageUrl) {
+  const imageUrl = imageFile ? await uploadImage(imageFile) : existingImageUrl;
+  const { error } = await db.from('new_lamps').update({
+    name: lampData.name,
+    image_url: imageUrl,
+    new_watt: lampData.newWatt,
+    led_investment: lampData.ledInvestment,
+  }).eq('id', id);
+  if (error) console.error('updateNewLamp:', error);
+}
+
+async function deleteNewLamp(id) {
+  const { error } = await db.from('new_lamps').delete().eq('id', id);
+  if (error) console.error('deleteNewLamp:', error);
+}
+
+// ── Replacements (linking) ────────────────────────────────
+
+async function setLampReplacements(oldLampId, newLampIds) {
+  await db.from('lamp_replacements').delete().eq('old_lamp_id', oldLampId);
+  if (newLampIds.length === 0) return;
+  const { error } = await db.from('lamp_replacements').insert(
+    newLampIds.map(newLampId => ({ old_lamp_id: oldLampId, new_lamp_id: newLampId }))
+  );
+  if (error) console.error('setLampReplacements:', error);
+}
+
+// ── Settings ──────────────────────────────────────────────
+
+async function getSettings() {
+  const { data, error } = await db.from('settings').select('*').eq('id', 1).single();
+  if (error) return { kwhPrice: 1.50, annualHours: 3120 };
+  return { kwhPrice: data.kwh_price, annualHours: data.annual_hours };
+}
+
+async function saveSettings(kwhPrice, annualHours) {
+  const { error } = await db.from('settings').upsert({ id: 1, kwh_price: kwhPrice, annual_hours: annualHours });
+  if (error) console.error('saveSettings:', error);
+}
+
+// ── Offer requests ────────────────────────────────────────
 
 async function submitOfferRequest(lampId, lampName, numArmatures, name, email, phone) {
   const { error } = await db.from('offer_requests').insert({

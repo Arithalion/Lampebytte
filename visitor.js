@@ -1,20 +1,20 @@
 // ── TCO calculation ──────────────────────────────────────
 
-function calcTCO(lamp, numArmatures, settings) {
+function calcTCO(oldLamp, newLamp, numArmatures, settings) {
   const { kwhPrice, annualHours } = settings;
-  const ballast = lamp.oldBallast || 0;
-  const lamps = lamp.lampsPerArmature || 1;
+  const lamps = oldLamp.lampsPerArmature || 1;
+  const ballast = oldLamp.oldBallast || 0;
 
-  const oldPowerKw = (lamp.oldWatt * lamps * (1 + ballast) * numArmatures) / 1000;
+  const oldPowerKw = (oldLamp.oldWatt * lamps * (1 + ballast) * numArmatures) / 1000;
   const oldKwhAnnual = oldPowerKw * annualHours;
   const oldEnergyCostAnnual = oldKwhAnnual * kwhPrice;
 
-  const yearsPerReplacement = lamp.oldLifespan / annualHours;
-  const maintenance10yr = (lamp.oldLampPrice + lamp.replacementLabour) * lamps * numArmatures * (10 / yearsPerReplacement);
+  const yearsPerReplacement = oldLamp.oldLifespan / annualHours;
+  const maintenance10yr = (oldLamp.oldLampPrice + oldLamp.replacementLabour) * lamps * numArmatures * (10 / yearsPerReplacement);
   const oldMaintenanceCostAnnual = maintenance10yr / 10;
   const oldAnnualOpCost = oldEnergyCostAnnual + oldMaintenanceCostAnnual;
 
-  const newPowerKw = (lamp.newWatt * lamps * numArmatures) / 1000;
+  const newPowerKw = (newLamp.newWatt * lamps * numArmatures) / 1000;
   const newKwhAnnual = newPowerKw * annualHours;
   const newEnergyCostAnnual = newKwhAnnual * kwhPrice;
 
@@ -23,10 +23,10 @@ function calcTCO(lamp, numArmatures, settings) {
   const maintenanceSavingsAnnual = oldMaintenanceCostAnnual;
   const annualTotalSavings = oldAnnualOpCost - newEnergyCostAnnual;
 
-  const totalInvestment = lamp.ledInvestment * numArmatures;
+  const totalInvestment = newLamp.ledInvestment * numArmatures;
   const paybackYears = annualTotalSavings > 0 ? totalInvestment / annualTotalSavings : null;
   const co2TonnesAnnual = (annualKwhSavings * 300) / 1_000_000;
-  const wattReductionPct = Math.round(((lamp.oldWatt - lamp.newWatt) / lamp.oldWatt) * 100);
+  const wattReductionPct = Math.round(((oldLamp.oldWatt - newLamp.newWatt) / oldLamp.oldWatt) * 100);
 
   return {
     annualKwhSavings: annualKwhSavings.toFixed(0),
@@ -51,7 +51,7 @@ const emptyState = document.getElementById('empty-state');
 
 async function renderGrid() {
   grid.innerHTML = '<p style="color:#aaa;padding:20px 0">Laster lamper…</p>';
-  const lamps = await getLamps();
+  const lamps = await getOldLamps();
   grid.innerHTML = '';
 
   if (lamps.length === 0) {
@@ -68,12 +68,8 @@ async function renderGrid() {
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', lamp.name);
 
-    const imageHtml = lamp.image
-      ? `<img src="${lamp.image}" alt="${lamp.name}">`
-      : '💡';
-
     card.innerHTML = `
-      <div class="lamp-image">${imageHtml}</div>
+      <div class="lamp-image">${lamp.image ? `<img src="${lamp.image}" alt="${lamp.name}">` : '💡'}</div>
       <div class="lamp-name">${lamp.name}</div>
     `;
 
@@ -94,16 +90,16 @@ const successMsg = document.getElementById('success-msg');
 const actionButtons = document.getElementById('action-buttons');
 
 let currentLamp = null;
+let selectedReplacement = null;
 let cachedSettings = { kwhPrice: 1.50, annualHours: 3120 };
 
 function openModal(lamp) {
   currentLamp = lamp;
+  selectedReplacement = lamp.replacements[0] || null;
 
   document.getElementById('modal-old-name').textContent = lamp.name;
-  document.getElementById('modal-new-name').textContent = lamp.replacement;
   document.getElementById('modal-old-image').innerHTML = lamp.image
-    ? `<img src="${lamp.image}" alt="${lamp.name}">`
-    : '💡';
+    ? `<img src="${lamp.image}" alt="${lamp.name}">` : '💡';
 
   document.getElementById('input-antall').value = 1;
 
@@ -114,6 +110,7 @@ function openModal(lamp) {
   document.getElementById('input-email').value = '';
   document.getElementById('input-phone').value = '';
 
+  renderReplacementSelector();
   updateEstimate();
 
   overlay.classList.add('open');
@@ -124,12 +121,53 @@ function closeModal() {
   overlay.classList.remove('open');
   document.body.style.overflow = '';
   currentLamp = null;
+  selectedReplacement = null;
+}
+
+function renderReplacementSelector() {
+  const container = document.getElementById('replacement-selector');
+  const replacements = currentLamp?.replacements || [];
+
+  if (replacements.length <= 1) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = '<p class="selector-label">Velg erstatning:</p>';
+
+  replacements.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'replacement-btn' + (r.id === selectedReplacement?.id ? ' active' : '');
+    btn.textContent = r.name;
+    btn.addEventListener('click', () => {
+      selectedReplacement = r;
+      container.querySelectorAll('.replacement-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateNewLampImage();
+      updateEstimate();
+    });
+    container.appendChild(btn);
+  });
+
+  updateNewLampImage();
+}
+
+function updateNewLampImage() {
+  document.getElementById('modal-new-name').textContent = selectedReplacement?.name || '—';
+  document.getElementById('modal-new-image').innerHTML = selectedReplacement?.image
+    ? `<img src="${selectedReplacement.image}" alt="${selectedReplacement.name}">` : '💡';
 }
 
 function updateEstimate() {
-  if (!currentLamp) return;
+  if (!currentLamp || !selectedReplacement) {
+    document.getElementById('modal-estimate').innerHTML =
+      '<p style="color:#aaa;font-size:0.9rem">Ingen erstatning koblet til denne lampen ennå.</p>';
+    return;
+  }
+
   const num = Math.max(1, parseInt(document.getElementById('input-antall').value) || 1);
-  const s = calcTCO(currentLamp, num, cachedSettings);
+  const s = calcTCO(currentLamp, selectedReplacement, num, cachedSettings);
 
   document.getElementById('modal-estimate').innerHTML = `
     <h4>Beregnet energibesparelse</h4>
@@ -146,7 +184,6 @@ function updateEstimate() {
 }
 
 document.getElementById('input-antall').addEventListener('input', updateEstimate);
-
 overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 document.getElementById('close-btn').addEventListener('click', closeModal);
 
@@ -165,13 +202,11 @@ document.getElementById('btn-back').addEventListener('click', () => {
 document.getElementById('btn-submit').addEventListener('click', async () => {
   const name = document.getElementById('input-name').value.trim();
   const email = document.getElementById('input-email').value.trim();
-
   if (!name) { document.getElementById('input-name').focus(); return; }
   if (!email || !email.includes('@')) { document.getElementById('input-email').focus(); return; }
 
   const antall = parseInt(document.getElementById('input-antall').value) || 1;
   const phone = document.getElementById('input-phone').value.trim();
-
   await submitOfferRequest(currentLamp.id, currentLamp.name, antall, name, email, phone);
 
   contactForm.classList.remove('visible');
