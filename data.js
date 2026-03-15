@@ -1,10 +1,39 @@
 const LAMPS_BUCKET = 'lamp-images';
+const IMAGE_MAX_PX = 800;
+const IMAGE_QUALITY = 0.8;
 
 // ── Helpers ──────────────────────────────────────────────
 
+function resizeImage(file) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > IMAGE_MAX_PX || height > IMAGE_MAX_PX) {
+        if (width > height) {
+          height = Math.round(height * IMAGE_MAX_PX / width);
+          width = IMAGE_MAX_PX;
+        } else {
+          width = Math.round(width * IMAGE_MAX_PX / height);
+          height = IMAGE_MAX_PX;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(resolve, 'image/jpeg', IMAGE_QUALITY);
+    };
+    img.src = url;
+  });
+}
+
 async function uploadImage(file) {
-  const filename = `${Date.now()}-${file.name}`;
-  const { error } = await db.storage.from(LAMPS_BUCKET).upload(filename, file);
+  const resized = await resizeImage(file);
+  const filename = `${Date.now()}.jpg`;
+  const { error } = await db.storage.from(LAMPS_BUCKET).upload(filename, resized, { contentType: 'image/jpeg' });
   if (error) { console.error('uploadImage:', error); return null; }
   const { data } = db.storage.from(LAMPS_BUCKET).getPublicUrl(filename);
   return data.publicUrl;
