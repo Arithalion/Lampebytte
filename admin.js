@@ -1,4 +1,4 @@
-const ADMIN_PASSWORD = 'lampe2024';
+const ADMIN_PASSWORD = 'Hrs1234567890!';
 const SESSION_KEY = 'lampebytte_admin_session';
 
 let editingId = null;
