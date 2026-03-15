@@ -14,14 +14,23 @@ function calcTCO(oldLamp, newLamp, numArmatures, settings) {
   const oldMaintenanceCostAnnual = maintenance10yr / 10;
   const oldAnnualOpCost = oldEnergyCostAnnual + oldMaintenanceCostAnnual;
 
-  const newPowerKw = (newLamp.newWatt * lamps * numArmatures) / 1000;
+  const newLamps = newLamp.lampsPerArmature || lamps;
+  const newPowerKw = (newLamp.newWatt * newLamps * numArmatures) / 1000;
   const newKwhAnnual = newPowerKw * annualHours;
   const newEnergyCostAnnual = newKwhAnnual * kwhPrice;
 
+  let newMaintenanceCostAnnual = 0;
+  if (newLamp.newLifespan) {
+    const newYearsPerReplacement = newLamp.newLifespan / annualHours;
+    const newMaintenance10yr = ((newLamp.newLampPrice || 0) + (newLamp.newLabour || 0)) * newLamps * numArmatures * (10 / newYearsPerReplacement);
+    newMaintenanceCostAnnual = newMaintenance10yr / 10;
+  }
+  const newAnnualOpCost = newEnergyCostAnnual + newMaintenanceCostAnnual;
+
   const annualKwhSavings = oldKwhAnnual - newKwhAnnual;
   const energySavingsAnnual = oldEnergyCostAnnual - newEnergyCostAnnual;
-  const maintenanceSavingsAnnual = oldMaintenanceCostAnnual;
-  const annualTotalSavings = oldAnnualOpCost - newEnergyCostAnnual;
+  const maintenanceSavingsAnnual = oldMaintenanceCostAnnual - newMaintenanceCostAnnual;
+  const annualTotalSavings = oldAnnualOpCost - newAnnualOpCost;
 
   const totalInvestment = newLamp.ledInvestment * numArmatures;
   const paybackYears = annualTotalSavings > 0 ? totalInvestment / annualTotalSavings : null;

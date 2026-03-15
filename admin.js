@@ -6,6 +6,32 @@ let newEditingId = null;
 let newEditingImageUrl = null;
 let newImageFile = null;
 
+// ── Collapsible sections ───────────────────────────────────
+
+document.querySelectorAll('.section-toggle').forEach(toggle => {
+  toggle.addEventListener('click', () => {
+    toggle.closest('.section').classList.toggle('collapsed');
+  });
+});
+
+function expandSection(sectionEl) {
+  sectionEl.classList.remove('collapsed');
+}
+
+// ── Tooltips (touch support) ───────────────────────────────
+
+document.addEventListener('click', e => {
+  const tip = e.target.closest('.tooltip');
+  if (tip) {
+    e.stopPropagation();
+    const wasActive = tip.classList.contains('active');
+    document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+    if (!wasActive) tip.classList.add('active');
+  } else {
+    document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+  }
+});
+
 // ── Auth ─────────────────────────────────────────────────
 
 const loginScreen = document.getElementById('login-screen');
@@ -144,6 +170,7 @@ async function startEditOldLamp(lamp) {
   await renderReplacementCheckboxes(lamp.replacements.map(r => r.id));
 
   renderOldLampList();
+  expandSection(document.getElementById('old-lamp-section'));
   document.getElementById('old-lamp-section').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -286,6 +313,10 @@ function startEditNewLamp(lamp) {
 
   document.getElementById('new-lamp-name').value = lamp.name;
   document.getElementById('new-lamp-watt').value = lamp.newWatt;
+  document.getElementById('new-lamp-per-armature').value = lamp.lampsPerArmature || 1;
+  document.getElementById('new-lamp-lifespan').value = lamp.newLifespan || '';
+  document.getElementById('new-lamp-price').value = lamp.newLampPrice || '';
+  document.getElementById('new-lamp-labour').value = lamp.newLabour || '';
   document.getElementById('new-lamp-investment').value = lamp.ledInvestment || '';
 
   const preview = document.getElementById('new-image-preview');
@@ -302,6 +333,7 @@ function startEditNewLamp(lamp) {
   document.getElementById('new-lamp-cancel').style.display = 'block';
 
   renderNewLampList();
+  expandSection(document.getElementById('new-lamp-section'));
   document.getElementById('new-lamp-section').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -315,6 +347,7 @@ function cancelEditNewLamp() {
   document.getElementById('new-lamp-form-title').textContent = 'Legg til ny lampe';
   document.getElementById('new-lamp-submit').textContent = 'Legg til';
   document.getElementById('new-lamp-cancel').style.display = 'none';
+  document.getElementById('new-lamp-per-armature').value = 1;
   renderNewLampList();
 }
 
@@ -346,6 +379,10 @@ document.getElementById('new-lamp-form').addEventListener('submit', async e => {
   const lampData = {
     name,
     newWatt,
+    lampsPerArmature: parseInt(document.getElementById('new-lamp-per-armature').value) || 1,
+    newLifespan: parseInt(document.getElementById('new-lamp-lifespan').value) || null,
+    newLampPrice: parseFloat(document.getElementById('new-lamp-price').value) || 0,
+    newLabour: parseFloat(document.getElementById('new-lamp-labour').value) || 0,
     ledInvestment: parseFloat(document.getElementById('new-lamp-investment').value) || 0,
   };
 

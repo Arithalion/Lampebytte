@@ -31,6 +31,10 @@ function mapNewLamp(row) {
     name: row.name,
     image: row.image_url,
     newWatt: row.new_watt,
+    lampsPerArmature: row.lamps_per_armature,
+    newLifespan: row.new_lifespan,
+    newLampPrice: row.new_lamp_price,
+    newLabour: row.new_labour,
     ledInvestment: row.led_investment,
   };
 }
@@ -96,6 +100,10 @@ async function addNewLamp(lampData, imageFile) {
     name: lampData.name,
     image_url: imageUrl,
     new_watt: lampData.newWatt,
+    lamps_per_armature: lampData.lampsPerArmature,
+    new_lifespan: lampData.newLifespan,
+    new_lamp_price: lampData.newLampPrice,
+    new_labour: lampData.newLabour,
     led_investment: lampData.ledInvestment,
   }).select().single();
   if (error) { console.error('addNewLamp:', error); return null; }
@@ -108,6 +116,10 @@ async function updateNewLamp(id, lampData, imageFile, existingImageUrl) {
     name: lampData.name,
     image_url: imageUrl,
     new_watt: lampData.newWatt,
+    lamps_per_armature: lampData.lampsPerArmature,
+    new_lifespan: lampData.newLifespan,
+    new_lamp_price: lampData.newLampPrice,
+    new_labour: lampData.newLabour,
     led_investment: lampData.ledInvestment,
   }).eq('id', id);
   if (error) console.error('updateNewLamp:', error);
