@@ -257,7 +257,8 @@
         };
 
         if (newEditingId) {
-          await updateNewLamp(newEditingId, lampData, newImageFile, newEditingImageUrl);
+          const ok = await updateNewLamp(newEditingId, lampData, newImageFile, newEditingImageUrl);
+          if (!ok) { alert('Kunne ikke lagre lampen. Prøv igjen.'); return; }
           cancelEditNewLamp();
         } else {
           await addNewLamp(lampData, newImageFile);

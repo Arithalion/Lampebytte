@@ -35,7 +35,9 @@ function calcTCO(oldLamp, newLamp, numArmatures, settings) {
   const totalInvestment = newLamp.ledInvestment * numArmatures;
   const paybackYears = annualTotalSavings > 0 ? totalInvestment / annualTotalSavings : null;
   const co2TonnesAnnual = (annualKwhSavings * settings.co2Factor) / 1_000_000;
-  const wattReductionPct = Math.round(((oldLamp.oldWatt - newLamp.newWatt) / oldLamp.oldWatt) * 100);
+  const wattReductionPct = oldLamp.oldWatt > 0
+    ? Math.round(((oldLamp.oldWatt - newLamp.newWatt) / oldLamp.oldWatt) * 100)
+    : 0;
 
   return {
     annualKwhSavings: annualKwhSavings.toFixed(0),
@@ -257,12 +259,19 @@ document.getElementById('btn-submit').addEventListener('click', async () => {
   const name = document.getElementById('input-name').value.trim();
   const email = document.getElementById('input-email').value.trim();
   if (!name) { document.getElementById('input-name').focus(); return; }
-  if (!email || !email.includes('@')) { document.getElementById('input-email').focus(); return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { document.getElementById('input-email').focus(); return; }
 
   const antall = parseInt(document.getElementById('input-antall').value) || 1;
   const phone = document.getElementById('input-phone').value.trim();
   const eff = getEffectiveSettings();
-  await submitOfferRequest(currentLamp.id, currentLamp.name, selectedReplacement?.name || null, antall, name, email, phone, eff.kwhPrice, eff.annualHours);
+  const submitError = document.getElementById('submit-error');
+  submitError.style.display = 'none';
+
+  const ok = await submitOfferRequest(currentLamp.id, currentLamp.name, selectedReplacement?.name || null, antall, name, email, phone, eff.kwhPrice, eff.annualHours);
+  if (!ok) {
+    submitError.style.display = 'block';
+    return;
+  }
 
   contactForm.classList.remove('visible');
   successMsg.classList.add('visible');

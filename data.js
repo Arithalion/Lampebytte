@@ -82,7 +82,11 @@ async function getOldLamps() {
 }
 
 async function addOldLamp(lampData, imageFile) {
-  const imageUrl = imageFile ? await uploadImage(imageFile) : null;
+  let imageUrl = null;
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile);
+    if (!imageUrl) return null;
+  }
   const { data, error } = await db.from('old_lamps').insert({
     name: lampData.name,
     image_url: imageUrl,
@@ -99,7 +103,11 @@ async function addOldLamp(lampData, imageFile) {
 }
 
 async function updateOldLamp(id, lampData, imageFile, existingImageUrl) {
-  const imageUrl = imageFile ? await uploadImage(imageFile) : existingImageUrl;
+  let imageUrl = existingImageUrl;
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile);
+    if (!imageUrl) return false;
+  }
   const { error } = await db.from('old_lamps').update({
     name: lampData.name,
     image_url: imageUrl,
@@ -111,7 +119,8 @@ async function updateOldLamp(id, lampData, imageFile, existingImageUrl) {
     old_lamp_price: lampData.oldLampPrice,
     replacement_labour: lampData.replacementLabour,
   }).eq('id', id);
-  if (error) console.error('updateOldLamp:', error);
+  if (error) { console.error('updateOldLamp:', error); return false; }
+  return true;
 }
 
 async function deleteOldLamp(id) {
@@ -128,7 +137,11 @@ async function getNewLamps() {
 }
 
 async function addNewLamp(lampData, imageFile) {
-  const imageUrl = imageFile ? await uploadImage(imageFile) : null;
+  let imageUrl = null;
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile);
+    if (!imageUrl) return null;
+  }
   const { data, error } = await db.from('new_lamps').insert({
     name: lampData.name,
     image_url: imageUrl,
@@ -145,7 +158,11 @@ async function addNewLamp(lampData, imageFile) {
 }
 
 async function updateNewLamp(id, lampData, imageFile, existingImageUrl) {
-  const imageUrl = imageFile ? await uploadImage(imageFile) : existingImageUrl;
+  let imageUrl = existingImageUrl;
+  if (imageFile) {
+    imageUrl = await uploadImage(imageFile);
+    if (!imageUrl) return false;
+  }
   const { error } = await db.from('new_lamps').update({
     name: lampData.name,
     image_url: imageUrl,
@@ -157,7 +174,8 @@ async function updateNewLamp(id, lampData, imageFile, existingImageUrl) {
     new_labour: lampData.newLabour,
     led_investment: lampData.ledInvestment,
   }).eq('id', id);
-  if (error) console.error('updateNewLamp:', error);
+  if (error) { console.error('updateNewLamp:', error); return false; }
+  return true;
 }
 
 async function deleteNewLamp(id) {
@@ -231,7 +249,8 @@ async function submitOfferRequest(lampId, lampName, replacementName, numArmature
     kwh_price: kwhPrice,
     annual_hours: annualHours,
   });
-  if (error) console.error('submitOfferRequest:', error);
+  if (error) { console.error('submitOfferRequest:', error); return false; }
+  return true;
 }
 
 async function deleteOfferRequest(id) {

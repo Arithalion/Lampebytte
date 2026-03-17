@@ -110,6 +110,10 @@
       renderBuildingCatList();
     }
 
+    function esc(str) {
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     // ── Settings ─────────────────────────────────────────────
 
     async function loadSettings() {
@@ -155,8 +159,8 @@
         const row = document.createElement('div');
         row.className = 'cat-row';
         row.innerHTML = `
-          <div class="cat-hours">${cat.hours} t</div>
-          <div class="cat-name">${cat.category}</div>
+          <div class="cat-hours">${esc(cat.hours)} t</div>
+          <div class="cat-name">${esc(cat.category)}</div>
           <div class="lamp-row-actions">
             <button class="btn-edit">Rediger</button>
             <button class="btn-delete">Slett</button>

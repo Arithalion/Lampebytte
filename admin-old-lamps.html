@@ -289,7 +289,8 @@
         const checkedIds = [...document.querySelectorAll('#replacement-checkboxes input:checked')].map(i => i.value);
 
         if (oldEditingId) {
-          await updateOldLamp(oldEditingId, lampData, oldImageFile, oldEditingImageUrl);
+          const ok = await updateOldLamp(oldEditingId, lampData, oldImageFile, oldEditingImageUrl);
+          if (!ok) { alert('Kunne ikke lagre lampen. Prøv igjen.'); return; }
           await setLampReplacements(oldEditingId, checkedIds);
           cancelEditOldLamp();
         } else {

@@ -62,6 +62,10 @@
     document.getElementById('btn-logout').addEventListener('click', () => db.auth.signOut());
     document.getElementById('btn-refresh').addEventListener('click', renderAll);
 
+    function esc(str) {
+      return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     async function initPage() {
       renderAll();
     }
@@ -97,8 +101,8 @@
         row.className = 'offer-row';
         row.innerHTML = `
           <div class="offer-info">
-            <div class="offer-name">${r.visitor_name}</div>
-            <div class="offer-sub">${r.lamp_name}${r.replacement_name ? ` → ${r.replacement_name}` : ''} · ${r.num_armatures} stk</div>
+            <div class="offer-name">${esc(r.visitor_name)}</div>
+            <div class="offer-sub">${esc(r.lamp_name)}${r.replacement_name ? ` → ${esc(r.replacement_name)}` : ''} · ${r.num_armatures} stk</div>
           </div>
           <div class="offer-meta">
             <div class="offer-date">${formatDate(r.created_at)}</div>
@@ -144,10 +148,10 @@
         <div class="detail-top">
           <div class="detail-img">${imgHtml}</div>
           <div class="detail-info">
-            <div><strong>Lampe:</strong> ${r.lamp_name}${r.replacement_name ? ` → ${r.replacement_name}` : ''}</div>
+            <div><strong>Lampe:</strong> ${esc(r.lamp_name)}${r.replacement_name ? ` → ${esc(r.replacement_name)}` : ''}</div>
             <div><strong>Antall:</strong> ${r.num_armatures} stk</div>
             ${settingsLine ? `<div>${settingsLine}</div>` : ''}
-            <div><strong>E-post:</strong> <a href="mailto:${r.email}">${r.email}</a>${r.phone ? ` · ${r.phone}` : ''}</div>
+            <div><strong>E-post:</strong> <a href="mailto:${esc(r.email)}">${esc(r.email)}</a>${r.phone ? ` · ${esc(r.phone)}` : ''}</div>
             <div><strong>Dato:</strong> ${formatDate(r.created_at)}</div>
           </div>
         </div>
@@ -198,8 +202,8 @@
         row.innerHTML = `
           <div class="started-img">${imgHtml}</div>
           <div class="offer-info">
-            <div class="offer-name">${r.visitor_name}</div>
-            <div class="offer-sub">${r.lamp_name}</div>
+            <div class="offer-name">${esc(r.visitor_name)}</div>
+            <div class="offer-sub">${esc(r.lamp_name)}</div>
           </div>
           <span class="status-badge ${badgeClass}">${badgeText}</span>
           <div class="lamp-row-actions">
